@@ -2,7 +2,7 @@
 import argparse
 import sys
 import logging
-from src import Emulator
+from Emulator import Emulator
 
 
 def parse_args():
