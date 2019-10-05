@@ -1,3 +1,8 @@
+"""
+Module Emulator
+===============
+This module supplies the class Emulator.
+"""
 import logging
 import math
 import string
@@ -5,16 +10,14 @@ logger = logging.getLogger(__name__)
 
 
 class Emulator:
+    """Class to store an emulator and runs program files."""
+
     def __init__(self, program_name=None):
         """
-            **Constructor**
+        Creates an emulator.
 
-            Creates an emulator.
-
-            Parameters
-            ----------
-            program_name
-                Name of the program to be loaded into the emulator
+        :param program_name: name of the program file to be run
+        :type program_name: string
         """
         self.memory = bytearray(65536)
         self.program = program_name
@@ -23,23 +26,11 @@ class Emulator:
 
     def load_program(self):
         """
-            **Load Program**
+        Loads the program.
 
-            This function loads the program.
-
-            :return: successful read
-
-            - Example::
-                load_program(a.c)
-
-            - Expected Success Response::
-                True
-
-            - Expected Fail Response::
-                False
-
+        :return: successful read
+        :rtype: bool
         """
-
         with open(self.program) as f:
             lineList = f.readlines()
 
@@ -72,9 +63,7 @@ class Emulator:
         logger.debug(lineList)
 
     def start_emulator(self):
-        """
-        """
-
+        """Starts the emulator."""
         command = input("> ")
 
         while command != "exit":
@@ -95,15 +84,20 @@ class Emulator:
 
     def access_memory(self, address):
         """
-        """
+        Accesses the memory address and displays the contents.
 
+        :param address: HEX address of the memory to be accessed.
+        """
         ad = int(address, 16)
         print(address, self.memory[ad:ad+1].hex().upper())
 
     def access_memory_range(self, begin, end):
         """
-        """
+        Accesses a memory range and displays all the contents.
 
+        :param begin: beginning HEX address of the memory to be accessed.
+        :param end: end HEX address of the memory to be accessed.
+        """
         b = int(begin, 16)
         e = int(end, 16)
         idx = math.ceil((e - b)/8)
@@ -118,6 +112,12 @@ class Emulator:
             i += 1
 
     def edit_memory(self, address, data):
+        """
+        Edits the contents of a specific memory address.
+
+        :param address: HEX address of the memory to be edited.
+        :param data: data to store into the memory address.
+        """
         data = data.translate({ord(c): None for c in string.whitespace})
         logger.debug(data)
         data = [int(data[i:i+2], 16) for i in range(0, len(data), 2)]
@@ -126,4 +126,5 @@ class Emulator:
         self.memory[int(address, 16):] = data[:]
 
     def run_program(self, address):
+        """Runs and executes the program."""
         print("Here")
