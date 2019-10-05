@@ -8,8 +8,10 @@ Welcome to T34 Emulator's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :name: mastertoc
 
+   tutorial
+   code
 
 Indices and tables
 ==================
