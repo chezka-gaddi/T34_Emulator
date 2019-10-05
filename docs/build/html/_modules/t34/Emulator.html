@@ -1,0 +1,230 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>t34.Emulator &#8212; T34 Emulator 0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for t34.Emulator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. module:: Emulator</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Emulator"><a class="viewcode-back" href="../../code.html#t34.Emulator.Emulator">[docs]</a><span class="k">class</span> <span class="nc">Emulator</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Class to store an emulator and runs program files.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">program_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates an emulator.</span>
+
+<span class="sd">        :param program_name: name of the program file to be run</span>
+<span class="sd">        :type program_name: string</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">memory</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">(</span><span class="mi">65536</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">program</span> <span class="o">=</span> <span class="n">program_name</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">program</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load_program</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Emulator.load_program"><a class="viewcode-back" href="../../code.html#t34.Emulator.Emulator.load_program">[docs]</a>    <span class="k">def</span> <span class="nf">load_program</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads the program.</span>
+
+<span class="sd">        :return: successful read</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">lineList</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+
+        <span class="c1"># lineList = [line.rstrip(&#39;\n&#39;) for line in open(self.program)]</span>
+        <span class="c1"># lineList = open(self.program, &quot;rb&quot;).read()</span>
+
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lineList</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="n">bytecount</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">bytecount</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">bytecount</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+            <span class="n">address</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">7</span><span class="p">]</span>
+            <span class="n">address</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+            <span class="n">record_type</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">7</span><span class="p">:</span><span class="mi">9</span><span class="p">]</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">9</span><span class="p">:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+            <span class="c1"># data = str.encode(data)</span>
+            <span class="n">checksum</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span>
+
+            <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="mi">2</span><span class="p">],</span> <span class="mi">16</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="mi">2</span><span class="p">)]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">memory</span><span class="p">[</span><span class="n">address</span><span class="p">:</span><span class="n">address</span><span class="o">+</span><span class="n">bytecount</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:]</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">memory</span><span class="p">[</span><span class="n">address</span><span class="p">:</span><span class="n">address</span><span class="o">+</span><span class="n">bytecount</span><span class="p">])</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">memory</span><span class="p">[</span><span class="n">address</span><span class="p">:</span><span class="n">address</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Address: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">address</span><span class="p">))</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Record Type: &quot;</span> <span class="o">+</span> <span class="n">record_type</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">checksum</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">lineList</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Emulator.start_emulator"><a class="viewcode-back" href="../../code.html#t34.Emulator.Emulator.start_emulator">[docs]</a>    <span class="k">def</span> <span class="nf">start_emulator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Starts the emulator.&quot;&quot;&quot;</span>
+        <span class="n">command</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;&gt; &quot;</span><span class="p">)</span>
+
+        <span class="k">while</span> <span class="n">command</span> <span class="o">!=</span> <span class="s2">&quot;exit&quot;</span><span class="p">:</span>
+            <span class="n">pidx</span> <span class="o">=</span> <span class="n">command</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+            <span class="n">cidx</span> <span class="o">=</span> <span class="n">command</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">command</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">run_program</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">pidx</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">access_memory_range</span><span class="p">(</span><span class="n">command</span><span class="p">[:</span><span class="n">pidx</span><span class="p">],</span> <span class="n">command</span><span class="p">[</span><span class="n">pidx</span><span class="o">+</span><span class="mi">1</span><span class="p">:])</span>
+            <span class="k">elif</span> <span class="n">cidx</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">edit_memory</span><span class="p">(</span><span class="n">command</span><span class="p">[:</span><span class="n">cidx</span><span class="p">],</span> <span class="n">command</span><span class="p">[</span><span class="n">cidx</span><span class="o">+</span><span class="mi">1</span><span class="p">:])</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">access_memory</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+            <span class="n">command</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;&gt; &quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Emulator.access_memory"><a class="viewcode-back" href="../../code.html#t34.Emulator.Emulator.access_memory">[docs]</a>    <span class="k">def</span> <span class="nf">access_memory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accesses the memory address and displays the contents.</span>
+
+<span class="sd">        :param address: HEX address of the memory to be accessed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">memory</span><span class="p">[</span><span class="n">ad</span><span class="p">:</span><span class="n">ad</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Emulator.access_memory_range"><a class="viewcode-back" href="../../code.html#t34.Emulator.Emulator.access_memory_range">[docs]</a>    <span class="k">def</span> <span class="nf">access_memory_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">begin</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accesses a memory range and displays all the contents.</span>
+
+<span class="sd">        :param begin: beginning HEX address of the memory to be accessed.</span>
+<span class="sd">        :param end: end HEX address of the memory to be accessed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">begin</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="n">e</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span><span class="o">/</span><span class="mi">8</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">idx</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">b</span> <span class="o">+</span> <span class="n">i</span><span class="o">*</span><span class="mi">8</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">s</span><span class="o">+</span><span class="mi">8</span> <span class="k">if</span> <span class="n">s</span><span class="o">+</span><span class="mi">8</span> <span class="o">&lt;</span> <span class="n">e</span> <span class="k">else</span> <span class="n">e</span><span class="o">+</span><span class="mi">1</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">memory</span><span class="p">[</span><span class="n">s</span><span class="p">:</span><span class="n">f</span><span class="p">]</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;</span><span class="si">{:02x}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data</span><span class="p">])</span>
+            <span class="nb">print</span><span class="p">(</span><span class="nb">hex</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;0x&quot;</span><span class="p">),</span> <span class="n">data</span><span class="p">)</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span></div>
+
+<div class="viewcode-block" id="Emulator.edit_memory"><a class="viewcode-back" href="../../code.html#t34.Emulator.Emulator.edit_memory">[docs]</a>    <span class="k">def</span> <span class="nf">edit_memory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Edits the contents of a specific memory address.</span>
+
+<span class="sd">        :param address: HEX address of the memory to be edited.</span>
+<span class="sd">        :param data: data to store into the memory address.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">translate</span><span class="p">({</span><span class="nb">ord</span><span class="p">(</span><span class="n">c</span><span class="p">):</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">string</span><span class="o">.</span><span class="n">whitespace</span><span class="p">})</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="mi">2</span><span class="p">],</span> <span class="mi">16</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="mi">2</span><span class="p">)]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">memory</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="mi">16</span><span class="p">):]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:]</span></div>
+
+<div class="viewcode-block" id="Emulator.run_program"><a class="viewcode-back" href="../../code.html#t34.Emulator.Emulator.run_program">[docs]</a>    <span class="k">def</span> <span class="nf">run_program</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Runs and executes the program.&quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Here&quot;</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">T34 Emulator</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  <li><a href="../t34.html">t34</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Chezka Gaddi.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,7 +1,5 @@
 """
-Module Emulator
-===============
-This module supplies the class Emulator.
+.. module:: Emulator
 """
 import logging
 import math

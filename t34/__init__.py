@@ -1,8 +1,9 @@
-#!/usr/bin/env python3
+"""The T34 Emulator."""
+
 import argparse
 import sys
 import logging
-from Emulator import Emulator
+from .Emulator import Emulator
 
 
 def parse_args():
@@ -27,6 +28,13 @@ def parse_args():
 
 
 def main(args):
+    """
+        **Main**
+
+        Entry point for the T34 emulator program.
+
+        :param args: command line arguments.
+    """
     if args.debug is True:
         logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     logging.debug(args)
