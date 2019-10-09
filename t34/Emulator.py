@@ -75,11 +75,13 @@ class Emulator:
                 output = self.access_memory_range(
                     command[:pidx], command[pidx+1:])
                 print(output)
+
             elif cidx != -1:
                 self.edit_memory(command[:cidx], command[cidx+1:])
 
             else:
-                self.access_memory(command)
+                output = self.access_memory(command)
+                print(output)
             command = input("> ")
 
     def access_memory(self, address):
@@ -88,6 +90,7 @@ class Emulator:
 
         :param address: HEX address of the memory to be accessed.
         """
+        logger.debug("Accessing Memory")
         ad = int(address, 16)
         return str(address) + " " + str(self.memory[ad:ad+1].hex().upper())
 
@@ -98,18 +101,22 @@ class Emulator:
         :param begin: beginning HEX address of the memory to be accessed.
         :param end: end HEX address of the memory to be accessed.
         """
+        logger.debug("Accessing memory range")
+
         b = int(begin, 16)
         e = int(end, 16)
         idx = math.ceil((e - b)/8)
         logger.debug(idx)
+        out = ""
         i = 0
         while i < idx:
             s = b + i*8
             f = s+8 if s+8 < e else e+1
             data = self.memory[s:f]
             data = " ".join(["{:02x}".format(x).upper() for x in data])
-            print(hex(s).lstrip("0x"), data)
+            out += hex(s).lstrip("0x") + " " + str(data) + "\n"
             i += 1
+        return out
 
     def edit_memory(self, address, data):
         """
