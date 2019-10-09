@@ -109,12 +109,13 @@ class Emulator:
         logger.debug(idx)
         out = ""
         i = 0
-        while i < idx:
+        # TODO: Find out why this is happening. Like wtf??
+        while (e-b) - i*8 > 0:
             s = b + i*8
             f = s+8 if s+8 < e else e+1
             data = self.memory[s:f]
             data = " ".join(["{:02x}".format(x).upper() for x in data])
-            out += hex(s).lstrip("0x") + " " + str(data) + "\n"
+            out += hex(s).lstrip("0x") + "\t" + str(data) + "\n"
             i += 1
         return out
 
