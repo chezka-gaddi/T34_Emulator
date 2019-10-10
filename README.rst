@@ -4,6 +4,10 @@ T34 Emulator
 Documentation
 *************
 
+.. note::
+
+    T34Emulator.pdf is already generated and can be found in /docs/build/latex/
+
 Install all the neccessary packages to create the documentation by starting virtual environment and running the command:
 
 .. code-block:: console

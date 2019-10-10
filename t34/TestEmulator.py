@@ -2,7 +2,7 @@
 .. module:: TestEmulator
 """
 import unittest
-from Emulator import Emulator
+from .Emulator import Emulator
 
 
 class TestEmulator(unittest.TestCase):
