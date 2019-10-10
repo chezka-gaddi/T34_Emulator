@@ -12,6 +12,7 @@ Welcome to T34 Emulator's documentation!
 
    tutorial
    code
+   test
 
 Indices and tables
 ==================

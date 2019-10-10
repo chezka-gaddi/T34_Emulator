@@ -1,8 +1,12 @@
+"""
+.. module:: TestEmulator
+"""
 import unittest
 from Emulator import Emulator
 
 
 class TestEmulator(unittest.TestCase):
+    """Unit testing class for all the functionality of the Emulator class."""
 
     def setUp(self):
         self.emulator = Emulator("test.txt")
@@ -22,7 +26,7 @@ class TestEmulator(unittest.TestCase):
         output = self.emulator.access_memory_range("300", "310")
         print(output)
         self.assertEqual(
-            output, "300\t9 04 85 07 A0 00 84 06\n308\tA9 A0 91 06 C8 D0 FB E6\n310\t07\n")
+            output, "300\tA9 04 85 07 A0 00 84 06\n308\tA9 A0 91 06 C8 D0 FB E6\n310\t07\n")
 
 
 if __name__ == '__main__':

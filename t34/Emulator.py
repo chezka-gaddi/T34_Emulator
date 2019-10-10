@@ -105,12 +105,11 @@ class Emulator:
 
         b = int(begin, 16)
         e = int(end, 16)
-        idx = math.ceil((e - b)/8)
-        logger.debug(idx)
+        idx = e-b+1
         out = ""
         i = 0
         # TODO: Find out why this is happening. Like wtf??
-        while (e-b) - i*8 > 0:
+        while idx - (i*8) > 0:
             s = b + i*8
             f = s+8 if s+8 < e else e+1
             data = self.memory[s:f]

@@ -8,4 +8,4 @@ Emulator -- auto members
 ************************
 
 .. automodule:: t34.Emulator
-    :members: 
+    :members:
