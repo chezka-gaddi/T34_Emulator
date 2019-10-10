@@ -1,5 +1,6 @@
 """
 .. module:: Emulator
+    :synopsis: Emulator class that runs the T34 Emulator
 """
 import logging
 import math
@@ -61,45 +62,58 @@ class Emulator:
         logger.debug(lineList)
 
     def start_emulator(self):
-        """Starts the emulator."""
+        """Starts the emulator and evaluates and executes commands."""
         command = input("> ")
 
         while command != "exit":
             pidx = command.find('.')
             cidx = command.find(":")
 
+            # Run program
             if command[-1] == "R":
-                self.run_program(command)
+                output = self.run_program(command)
+                print(output)
 
+            # Access memory range
             elif pidx != -1:
                 output = self.access_memory_range(
                     command[:pidx], command[pidx+1:])
                 print(output)
 
+            # Edit memory
             elif cidx != -1:
                 self.edit_memory(command[:cidx], command[cidx+1:])
 
+            # Access memory address
             else:
                 output = self.access_memory(command)
                 print(output)
+
             command = input("> ")
 
     def access_memory(self, address):
         """
         Accesses the memory address and displays the contents.
 
-        :param address: HEX address of the memory to be accessed.
+        :param str address: HEX address of the memory to be accessed.
+
+        :return: memory content
+        :rtype: string
         """
         logger.debug("Accessing Memory")
+
         ad = int(address, 16)
-        return str(address) + " " + str(self.memory[ad:ad+1].hex().upper())
+        return str(address) + "\t" + str(self.memory[ad:ad+1].hex().upper())
 
     def access_memory_range(self, begin, end):
         """
         Accesses a memory range and displays all the contents.
 
-        :param begin: beginning HEX address of the memory to be accessed.
-        :param end: end HEX address of the memory to be accessed.
+        :param str begin: beginning HEX address of the memory to be accessed.
+        :param str end: end HEX address of the memory to be accessed.
+
+        :return out: contents of the memory range.
+        :rtype: string
         """
         logger.debug("Accessing memory range")
 
@@ -107,23 +121,24 @@ class Emulator:
         e = int(end, 16)
         idx = e-b+1
         out = ""
+
+        s = b
         i = 0
-        # TODO: Find out why this is happening. Like wtf??
-        while idx - (i*8) > 0:
-            s = b + i*8
-            f = s+8 if s+8 < e else e+1
+        while s <= e:
+            f = s+8 if s+8 <= e else e+1
             data = self.memory[s:f]
             data = " ".join(["{:02x}".format(x).upper() for x in data])
             out += hex(s).lstrip("0x") + "\t" + str(data) + "\n"
             i += 1
+            s = b + i*8
         return out
 
     def edit_memory(self, address, data):
         """
         Edits the contents of a specific memory address.
 
-        :param address: HEX address of the memory to be edited.
-        :param data: data to store into the memory address.
+        :param str address: HEX address of the memory to be edited.
+        :param str data: data to store into the memory address.
         """
         data = data.translate({ord(c): None for c in string.whitespace})
         logger.debug(data)
@@ -133,5 +148,14 @@ class Emulator:
         self.memory[int(address, 16):] = data[:]
 
     def run_program(self, address):
-        """Runs and executes the program."""
-        print("Here")
+        """
+        Runs and executes the program.
+
+        :param address: Location of the command to be executed.
+        :return output: Contents of all the registers.
+        :rtype: string
+        """
+        output = " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n"
+        ad = int(address, 16)
+        output += address
+        return output

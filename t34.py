@@ -1,9 +1,13 @@
-"""The T34 Emulator."""
+"""
+.. moduleauthor:: Chezka Gaddi
+
+"""
 
 import argparse
 import sys
 import logging
 from t34 import Emulator
+from t34 import TestEmulator
 
 
 def parse_args():
