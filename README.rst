@@ -4,7 +4,7 @@ T34 Emulator
 Documentation
 *************
 
-.. higlight::
+.. highlight::
 
     T34Emulator.pdf is already generated and can be found in /docs/build/latex/
 
