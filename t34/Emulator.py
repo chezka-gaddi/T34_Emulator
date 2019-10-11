@@ -13,12 +13,13 @@ class Emulator:
 
     def __init__(self, program_name=None):
         """
-        Creates an emulator.
+        Creates an emulator and sets up the memory space for the main memory and the registers.
 
         :param program_name: name of the program file to be run
         :type program_name: string
         """
         self.memory = bytearray(65536)
+        self.registers = bytearray(8)
         self.program = program_name
         if self.program is not None:
             self.load_program()
@@ -149,13 +150,15 @@ class Emulator:
 
     def run_program(self, address):
         """
-        Runs and executes the program.
+        Runs and executes the program. It also prints out the contents of the registers.
 
         :param address: Location of the command to be executed.
         :return output: Contents of all the registers.
         :rtype: string
         """
+        ad = int(address)
+        self.registers[0] = ad
         output = " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n"
-        ad = int(address, 16)
-        output += address
+
+        output += str(self.registers[0])
         return output
