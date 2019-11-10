@@ -6,5 +6,5 @@ All of the functionality of the :class:`Emulator` class is tested with the unitt
 Test Emulator
 *************
 
-.. automodule:: t34.TestEmulator
+.. automodule:: t34.test_emulator
     :members:

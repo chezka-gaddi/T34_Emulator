@@ -34,9 +34,6 @@ class Emulator:
         with open(self.program) as f:
             lineList = f.readlines()
 
-        # lineList = [line.rstrip('\n') for line in open(self.program)]
-        # lineList = open(self.program, "rb").read()
-
         for line in lineList:
             logger.debug(line)
             bytecount = line[1:3]
@@ -71,8 +68,8 @@ class Emulator:
             cidx = command.find(":")
 
             # Run program
-            if command[-1] == "R":
-                output = self.run_program(command)
+            if command.endswith("R"):
+                output = self.run_program(command[:-1])
                 print(output)
 
             # Access memory range
@@ -129,7 +126,7 @@ class Emulator:
             f = s+8 if s+8 <= e else e+1
             data = self.memory[s:f]
             data = " ".join(["{:02x}".format(x).upper() for x in data])
-            out += hex(s).lstrip("0x") + "\t" + str(data) + "\n"
+            out += hex(s).lstrip("0x") or "0" + "\t" + str(data) + "\n"
             i += 1
             s = b + i*8
         return out
@@ -141,9 +138,9 @@ class Emulator:
         :param str address: HEX address of the memory to be edited.
         :param str data: data to store into the memory address.
         """
-        data = data.translate({ord(c): None for c in string.whitespace})
         logger.debug(data)
-        data = [int(data[i:i+2], 16) for i in range(0, len(data), 2)]
+        data = [int(byte, base=16) for byte in data.split()]
+        # data = [int(data[i:i+2], 16) for i in range(0, len(data), 2)]
         logger.debug(data)
 
         self.memory[int(address, 16):] = data[:]
