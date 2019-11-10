@@ -1,0 +1,6 @@
+!.gitignore
+
+docs/build/*
+!docs/build/latex
+docs/build/latex/*
+!docs/build/latex/T34Emulator.pdf
