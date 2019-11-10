@@ -117,7 +117,6 @@ class Emulator:
 
         b = int(begin, 16)
         e = int(end, 16)
-        idx = e-b+1
         out = ""
 
         s = b
@@ -126,7 +125,7 @@ class Emulator:
             f = s+8 if s+8 <= e else e+1
             data = self.memory[s:f]
             data = " ".join(["{:02x}".format(x).upper() for x in data])
-            out += hex(s).lstrip("0x") or "0" + "\t" + str(data) + "\n"
+            out += (hex(s).lstrip("0x") or "0") + "\t" + str(data) + "\n"
             i += 1
             s = b + i*8
         return out
