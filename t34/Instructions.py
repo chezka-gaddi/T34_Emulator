@@ -40,6 +40,18 @@ class Instructions(Memory.Memory):
         return "ASL", "A"
 
     def brk(self):
+        self.sei()
+        sp = int(self.registers[5:6].hex(), 16)
+        pc = int(self.registers[:2].hex(), 16) + 2
+        self.memory[sp:sp+2] = pc.to_bytes(2, byteorder='big')
+        sp -= 2
+        sr = int(self.registers[6:7].hex(), 16)
+        self.memory[sp:sp+1] = sr.to_bytes(1, byteorder='big')
+        sp -= 1
+        self.registers[5:6] = sp.to_bytes(1, byteorder='big')
+
+        sr = sr | (1 << 4)
+        self.registers[6:7] = sr.to_bytes(1, byteorder='big')
         return "BRK", "impl"
 
     def clc(self):
@@ -93,7 +105,7 @@ class Instructions(Memory.Memory):
 
     def pha(self):
         sp = int(self.registers[5:6].hex(), 16)
-        self.edit(sp, self.registers[2:3].hex())
+        self.memory[sp:sp+1] = self.registers[2:3]
         sp -= 1
         self.registers[5:6] = sp.to_bytes(1, byteorder='big')
         return "PHA", "impl"
@@ -102,6 +114,9 @@ class Instructions(Memory.Memory):
         return "PHP", "impl"
 
     def pla(self):
+        sp = int(self.registers[5:6].hex(), 16) + 1
+        self.registers[2:3] = self.memory[sp:sp+1]
+        self.registers[5:6] = sp.to_bytes(1, byteorder='big')
         return "PLA", "impl"
 
     def plp(self):
