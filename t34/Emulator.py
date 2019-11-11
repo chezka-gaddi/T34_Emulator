@@ -8,8 +8,145 @@ import string
 logger = logging.getLogger(__name__)
 
 
+def asl():
+    return "ASL", "A"
+
+
+def brk():
+    return "BRK", "impl"
+
+
+def clc():
+    return "CLC", "impl"
+
+
+def cld():
+    return "CLD", "impl"
+
+
+def cli():
+    return "CLI", "impl"
+
+
+def clv():
+    return "CLV", "impl"
+
+
+def dex():
+    return "DEX", "impl"
+
+
+def dey():
+    return "DEY", "impl"
+
+
+def inx():
+    return "INX", "impl"
+
+
+def iny():
+    return "INY", "impl"
+
+
+def lsr():
+    return "LSR", "A"
+
+
+def nop():
+    return "NOP", "impl"
+
+
+def pha():
+    return "PHA", "impl"
+
+
+def php():
+    return "PHP", "impl"
+
+
+def pla():
+    return "PLA", "impl"
+
+
+def plp():
+    return "PLP", "impl"
+
+
+def rol():
+    return "ROL", "A"
+
+
+def ror():
+    return "ROR", "A"
+
+
+def sec():
+    return "SEC", "impl"
+
+
+def sed():
+    return "SED", "impl"
+
+
+def sei():
+    return "SEI", "impl"
+
+
+def tax():
+    return "TAX", "impl"
+
+
+def tay():
+    return "TAY", "impl"
+
+
+def tsx():
+    return "TSX", "impl"
+
+
+def txa():
+    return "TXA", "impl"
+
+
+def txs():
+    return "TXS", "impl"
+
+
+def tya():
+    return "TYA", "impl"
+
+
 class Emulator:
     """Class to store an emulator and runs program files."""
+    instructions = {
+        "00": brk,
+        "o8": php,
+        "0A": asl,
+        "18": clc,
+        "28": plp,
+        "2A": rol,
+        "38": sec,
+        "48": pha,
+        "4A": lsr,
+        "58": cli,
+        "68": pla,
+        "6A": ror,
+        "78": sei,
+        "88": dey,
+        "8A": txa,
+        "98": tya,
+        "9A": txs,
+        "B8": clv,
+        "A8": tay,
+        "AA": tax,
+        "BA": tsx,
+        "C8": iny,
+        "CA": dex,
+        "D8": cld,
+        "E8": inx,
+        "EA": nop,
+        "F8": sed
+    }
 
     def __init__(self, program_name=None):
         """
@@ -18,8 +155,9 @@ class Emulator:
         :param program_name: name of the program file to be run
         :type program_name: string
         """
+
         self.memory = bytearray(65536)
-        self.registers = bytearray(8)
+        self.registers = bytearray(7)
         self.program = program_name
         if self.program is not None:
             self.load_program()
@@ -89,6 +227,9 @@ class Emulator:
 
             command = input("> ")
 
+    def get_memory(self, address):
+        return self.memory[address:address+1].hex().upper()
+
     def access_memory(self, address):
         """
         Accesses the memory address and displays the contents.
@@ -101,7 +242,7 @@ class Emulator:
         logger.debug("Accessing Memory")
 
         ad = int(address, 16)
-        return str(address) + "\t" + str(self.memory[ad:ad+1].hex().upper())
+        return address + "\t" + self.get_memory(ad)
 
     def access_memory_range(self, begin, end):
         """
@@ -139,7 +280,6 @@ class Emulator:
         """
         logger.debug(data)
         data = [int(byte, base=16) for byte in data.split()]
-        # data = [int(data[i:i+2], 16) for i in range(0, len(data), 2)]
         logger.debug(data)
 
         self.memory[int(address, 16):] = data[:]
@@ -152,9 +292,14 @@ class Emulator:
         :return output: Contents of all the registers.
         :rtype: string
         """
-        ad = int(address)
-        self.registers[0] = ad
+        ad = int(address, 16)
+        addr = ad.to_bytes(2, byteorder='big')
+        self.registers[:2] = addr[:]
+
+        op = self.get_memory(int(address, 16))
+        ins = self.instructions[op]
+        name, amod = ins()
+
         output = " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n"
 
-        output += str(self.registers[0])
         return output
