@@ -5,148 +5,13 @@
 import logging
 import math
 import string
+from . import Instructions
+from . import Memory
 logger = logging.getLogger(__name__)
 
 
-def asl():
-    return "ASL", "A"
-
-
-def brk():
-    return "BRK", "impl"
-
-
-def clc():
-    return "CLC", "impl"
-
-
-def cld():
-    return "CLD", "impl"
-
-
-def cli():
-    return "CLI", "impl"
-
-
-def clv():
-    return "CLV", "impl"
-
-
-def dex():
-    return "DEX", "impl"
-
-
-def dey():
-    return "DEY", "impl"
-
-
-def inx():
-    return "INX", "impl"
-
-
-def iny():
-    return "INY", "impl"
-
-
-def lsr():
-    return "LSR", "A"
-
-
-def nop():
-    return "NOP", "impl"
-
-
-def pha():
-    return "PHA", "impl"
-
-
-def php():
-    return "PHP", "impl"
-
-
-def pla():
-    return "PLA", "impl"
-
-
-def plp():
-    return "PLP", "impl"
-
-
-def rol():
-    return "ROL", "A"
-
-
-def ror():
-    return "ROR", "A"
-
-
-def sec():
-    return "SEC", "impl"
-
-
-def sed():
-    return "SED", "impl"
-
-
-def sei():
-    return "SEI", "impl"
-
-
-def tax():
-    return "TAX", "impl"
-
-
-def tay():
-    return "TAY", "impl"
-
-
-def tsx():
-    return "TSX", "impl"
-
-
-def txa():
-    return "TXA", "impl"
-
-
-def txs():
-    return "TXS", "impl"
-
-
-def tya():
-    return "TYA", "impl"
-
-
-class Emulator:
+class Emulator(Instructions.Instructions):
     """Class to store an emulator and runs program files."""
-    instructions = {
-        "00": brk,
-        "o8": php,
-        "0A": asl,
-        "18": clc,
-        "28": plp,
-        "2A": rol,
-        "38": sec,
-        "48": pha,
-        "4A": lsr,
-        "58": cli,
-        "68": pla,
-        "6A": ror,
-        "78": sei,
-        "88": dey,
-        "8A": txa,
-        "98": tya,
-        "9A": txs,
-        "B8": clv,
-        "A8": tay,
-        "AA": tax,
-        "BA": tsx,
-        "C8": iny,
-        "CA": dex,
-        "D8": cld,
-        "E8": inx,
-        "EA": nop,
-        "F8": sed
-    }
 
     def __init__(self, program_name=None):
         """
@@ -156,8 +21,7 @@ class Emulator:
         :type program_name: string
         """
 
-        self.memory = bytearray(65536)
-        self.registers = bytearray(7)
+        super().__init__()
         self.program = program_name
         if self.program is not None:
             self.load_program()
@@ -226,9 +90,6 @@ class Emulator:
                 print(output)
 
             command = input("> ")
-
-    def get_memory(self, address):
-        return self.memory[address:address+1].hex().upper()
 
     def access_memory(self, address):
         """
@@ -299,6 +160,7 @@ class Emulator:
         op = self.get_memory(int(address, 16))
         ins = self.instructions[op]
         name, amod = ins()
+        print(name, amod)
 
         output = " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n"
 

@@ -32,12 +32,6 @@ class TestEmulator(unittest.TestCase):
         self.assertEqual(
             output, "300\tA9 04 85 07 A0 00 84 06\n308\tA9 A0 91 06 C8 D0 FB E6\n310\t07\n")
 
-    def test_run_program(self):
-        """Test running the program command."""
-        output = self.emulator.run_program("200")
-        self.assertEqual(
-            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n200")
-
 
 if __name__ == '__main__':
     unittest.main()
