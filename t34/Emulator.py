@@ -20,7 +20,6 @@ class Emulator(Instructions.Instructions):
         :param program_name: name of the program file to be run
         :type program_name: string
         """
-
         super().__init__()
         self.program = program_name
         if self.program is not None:
@@ -44,7 +43,6 @@ class Emulator(Instructions.Instructions):
             address = int(address, 16)
             record_type = line[7:9]
             data = line[9:-3]
-            # data = str.encode(data)
             checksum = line[-3:]
 
             data = [int(data[i:i+2], 16) for i in range(0, len(data), 2)]
@@ -71,8 +69,14 @@ class Emulator(Instructions.Instructions):
 
             # Run program
             if command.endswith("R"):
-                output = self.run_program(command[:-1])
-                print(output)
+                print(" PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC")
+                pc = int(command[:-1], 10)
+                while True:
+                    output, flag = self.run_program(str(pc))
+                    print(output)
+                    pc += 1
+                    if flag == "BRK":
+                        break
 
             # Access memory range
             elif pidx != -1:
@@ -85,9 +89,12 @@ class Emulator(Instructions.Instructions):
                 self.edit_memory(command[:cidx], command[cidx+1:])
 
             # Access memory address
-            else:
+            elif pidx == -1:
                 output = self.access_memory(command)
                 print(output)
+
+            else:
+                exit()
 
             command = input("> ")
 
@@ -153,15 +160,19 @@ class Emulator(Instructions.Instructions):
         :return output: Contents of all the registers.
         :rtype: string
         """
+        logger.debug("Current PC: " + address)
         ad = int(address, 16)
+        logger.debug(ad)
         addr = ad.to_bytes(2, byteorder='big')
         self.registers[:2] = addr[:]
 
-        op = self.get_memory(int(address, 16))
+        op = self.get_memory(ad)
+        logger.debug("OP: " + op)
         ins = self.instructions[op]
         name, amod = ins()
-        print(name, amod)
 
-        output = " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n"
-
-        return output
+        output = " " + address + "  " + op + "  " + name + \
+            "   " + amod + " -- --  " + \
+            " ".join(self.registers[x:x+1].hex().upper()
+                     for x in range(2, 6)) + " " + bin(int(self.registers[6:7].hex(), 16)).lstrip('0b').zfill(8)
+        return output, name

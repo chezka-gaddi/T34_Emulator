@@ -43,36 +43,59 @@ class Instructions(Memory.Memory):
         return "BRK", "impl"
 
     def clc(self):
+        sr = ~int(self.registers[6:7].hex(), 16) & 1
+        self.registers[6:7] = sr.to_bytes(1, byteorder='big')
         return "CLC", "impl"
 
     def cld(self):
+        sr = ~int(self.registers[6:7].hex(), 16) & (1 << 3)
+        self.registers[6:7] = sr.to_bytes(1, byteorder='big')
         return "CLD", "impl"
 
     def cli(self):
+        sr = ~int(self.registers[6:7].hex(), 16) & (1 << 2)
+        self.registers[6:7] = sr.to_bytes(1, byteorder='big')
         return "CLI", "impl"
 
     def clv(self):
+        sr = ~int(self.registers[6:7].hex(), 16) & (1 << 6)
+        self.registers[6:7] = sr.to_bytes(1, byteorder='big')
         return "CLV", "impl"
 
     def dex(self):
+        x = int(self.registers[3:4].hex().upper(), 16) - 1
+        self.registers[3:4] = x.to_bytes(1, byteorder='big')
         return "DEX", "impl"
 
     def dey(self):
+        y = int(self.registers[4:5].hex().upper(), 16) - 1
+        self.registers[4:5] = y.to_bytes(1, byteorder='big')
         return "DEY", "impl"
 
     def inx(self):
+        x = int(self.registers[3:4].hex().upper(), 16) + 1
+        self.registers[3:4] = x.to_bytes(1, byteorder='big')
         return "INX", "impl"
 
     def iny(self):
+        y = int(self.registers[4:5].hex().upper(), 16) + 1
+        self.registers[4:5] = y.to_bytes(1, byteorder='big')
         return "INY", "impl"
 
     def lsr(self):
+        ac = int(self.registers[2:3].hex().upper(), 16)
+        ac = ac >> 1
+        self.registers[2:3] = ac.to_bytes(1, byteorder='big')
         return "LSR", "A"
 
     def nop(self):
         return "NOP", "impl"
 
     def pha(self):
+        sp = int(self.registers[5:6].hex(), 16)
+        self.edit(sp, self.registers[2:3].hex())
+        sp -= 1
+        self.registers[5:6] = sp.to_bytes(1, byteorder='big')
         return "PHA", "impl"
 
     def php(self):
@@ -91,28 +114,40 @@ class Instructions(Memory.Memory):
         return "ROR", "A"
 
     def sec(self):
+        sr = int(self.registers[6:7].hex(), 16) | 1
+        self.registers[6:7] = sr.to_bytes(1, byteorder='big')
         return "SEC", "impl"
 
     def sed(self):
+        sr = int(self.registers[6:7].hex(), 16) | (1 << 3)
+        self.registers[6:7] = sr.to_bytes(1, byteorder='big')
         return "SED", "impl"
 
     def sei(self):
+        sr = int(self.registers[6:7].hex(), 16) | (1 << 2)
+        self.registers[6:7] = sr.to_bytes(1, byteorder='big')
         return "SEI", "impl"
 
     def tax(self):
+        self.registers[3:4] = self.registers[2:3]
         return "TAX", "impl"
 
     def tay(self):
+        self.registers[4:5] = self.registers[2:3]
         return "TAY", "impl"
 
     def tsx(self):
+        self.registers[3:4] = self.registers[5:6]
         return "TSX", "impl"
 
     def txa(self):
+        self.registers[2:3] = self.registers[3:4]
         return "TXA", "impl"
 
     def txs(self):
+        self.registers[5:6] = self.registers[3:4]
         return "TXS", "impl"
 
     def tya(self):
+        self.registers[2:3] = self.registers[4:5]
         return "TYA", "impl"
