@@ -8,7 +8,7 @@ class Instructions(Memory.Memory):
         self.name = ""
         self.instructions = {
             "00": self.brk,
-            "o8": self.php,
+            "08": self.php,
             "0A": self.asl,
             "18": self.clc,
             "28": self.plp,

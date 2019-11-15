@@ -2,21 +2,29 @@ class Memory:
     def __init__(self):
         self.memory = bytearray(65536)
         self.registers = bytearray(8)
+        self.initialize_registers()
+
+    def initialize_registers(self):
+        self.registers = bytearray([0, 0, 0, 0, 0, 0, 0, 0])
         sp = int(self.registers[5:6].hex(), 16) | 255
         self.registers[5:6] = sp.to_bytes(1, byteorder='big')
         sr = ~int(self.registers[6:7].hex(), 16) & (1 << 5)
         self.registers[6:7] = sr.to_bytes(1, byteorder='big')
 
-    def edit(self, address, data):
+    def read_memory(self, start, end):
         """
         Edits the contents of a specific memory address.
 
         :param str address: HEX address of the memory to be edited.
         :param str data: data to store into the memory address.
         """
-        data = [int(byte, base=16) for byte in data.split()]
+        return self.memory[start:end]
 
-        self.memory[address:] = data[:]
+    def write_memory(self, address, data):
+        """
+        Writes data to a specific memory address.
 
-    def get_memory(self, address):
-        return self.memory[address:address+1].hex().upper()
+        :param str address: HEX address of the memory to be edited.
+        :param str data: data to store into the memory address.
+        """
+        self.memory[int(address, 16):] = data[:]

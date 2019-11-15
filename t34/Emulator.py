@@ -41,21 +41,13 @@ class Emulator(Instructions.Instructions):
             bytecount = int(bytecount, 16)
             address = line[3:7]
             address = int(address, 16)
-            record_type = line[7:9]
             data = line[9:-3]
-            checksum = line[-3:]
 
             data = [int(data[i:i+2], 16) for i in range(0, len(data), 2)]
 
             self.memory[address:address+bytecount] = data[:]
 
             logger.debug(self.memory[address:address+bytecount])
-            logger.debug(self.memory[address:address+1])
-
-            logger.debug("Address: " + str(address))
-            logger.debug("Record Type: " + record_type)
-            logger.debug(data)
-            logger.debug(checksum)
 
         logger.debug(lineList)
 
@@ -69,14 +61,8 @@ class Emulator(Instructions.Instructions):
 
             # Run program
             if command.endswith("R"):
-                print(" PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC")
-                pc = int(command[:-1], 10)
-                while True:
-                    output, flag = self.run_program(str(pc))
-                    print(output)
-                    pc += 1
-                    if flag == "BRK":
-                        break
+                output = self.run_program(command[:-1])
+                print(output)
 
             # Access memory range
             elif pidx != -1:
@@ -110,7 +96,7 @@ class Emulator(Instructions.Instructions):
         logger.debug("Accessing Memory")
 
         ad = int(address, 16)
-        return address + "\t" + self.get_memory(ad)
+        return address + "\t" + self.read_memory(ad, ad+1).hex().upper()
 
     def access_memory_range(self, begin, end):
         """
@@ -132,7 +118,8 @@ class Emulator(Instructions.Instructions):
         i = 0
         while s <= e:
             f = s+8 if s+8 <= e else e+1
-            data = self.memory[s:f]
+            data = self.read_memory(s, f)
+            # self.memory[s:f]
             data = " ".join(["{:02x}".format(x).upper() for x in data])
             out += (hex(s).lstrip("0x") or "0") + "\t" + str(data) + "\n"
             i += 1
@@ -150,7 +137,7 @@ class Emulator(Instructions.Instructions):
         data = [int(byte, base=16) for byte in data.split()]
         logger.debug(data)
 
-        self.memory[int(address, 16):] = data[:]
+        self.write_memory(address, data)
 
     def run_program(self, address):
         """
@@ -160,19 +147,30 @@ class Emulator(Instructions.Instructions):
         :return output: Contents of all the registers.
         :rtype: string
         """
-        logger.debug("Current PC: " + address)
-        ad = int(address, 16)
-        logger.debug(ad)
-        addr = ad.to_bytes(2, byteorder='big')
+        output = " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n"
+        pc = int(address, 16)
+        while True:
+            out, flag = self.execute_instruction(pc)
+            output += out
+            pc += 1
+            if flag == "BRK":
+                break
+
+        return output
+
+    def execute_instruction(self, address):
+        logger.debug("Current PC: " + str(address))
+
+        addr = address.to_bytes(2, byteorder='big')
         self.registers[:2] = addr[:]
 
-        op = self.get_memory(ad)
+        op = self.read_memory(address, address+1).hex().upper()
         logger.debug("OP: " + op)
         ins = self.instructions[op]
         name, amod = ins()
 
-        output = " " + address + "  " + op + "  " + name + \
+        output = " " + str(address) + "  " + op + "  " + name + \
             "   " + amod + " -- --  " + \
             " ".join(self.registers[x:x+1].hex().upper()
-                     for x in range(2, 6)) + " " + bin(int(self.registers[6:7].hex(), 16)).lstrip('0b').zfill(8)
+                     for x in range(2, 6)) + " " + bin(int(self.registers[6:7].hex(), 16)).lstrip('0b').zfill(8) + "\n"
         return output, name
