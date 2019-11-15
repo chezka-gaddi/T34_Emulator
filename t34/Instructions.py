@@ -37,6 +37,14 @@ class Instructions(Memory.Memory):
         }
 
     def asl(self):
+        ac = self.registers[3:4]
+        carry = (ac & 1 << 7) >> 7
+        if carry == 0:
+            self.clc()
+        else:
+            self.sec()
+        ac = ac << 1
+        self.registers[3:4] = ac
         return "ASL", "A"
 
     def brk(self):
@@ -111,6 +119,9 @@ class Instructions(Memory.Memory):
         return "PHA", "impl"
 
     def php(self):
+        """Pushes a copy of the status flags on to the stack."""
+        sp = int(self.registers[5:6].hex(), 16)
+        sr = int(self.registers[6:7].hex(), 16)
         return "PHP", "impl"
 
     def pla(self):
