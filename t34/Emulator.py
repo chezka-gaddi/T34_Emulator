@@ -141,7 +141,7 @@ class Emulator(Instructions.Instructions):
 
     def run_program(self, address):
         """
-        Runs and executes the program. It also prints out the contents of the registers.
+        Start program at specific location in memory until end of program.
 
         :param address: Location of the command to be executed.
         :return output: Contents of all the registers.
@@ -159,6 +159,12 @@ class Emulator(Instructions.Instructions):
         return output
 
     def execute_instruction(self, address):
+        """
+        Gets the instruction stored in memory, decodes it and executes it.
+
+        :param address: Location of the command to be executed
+        :return output: Contents of specific 
+        """
         logger.debug("Current PC: " + str(address))
 
         addr = address.to_bytes(2, byteorder='big')
@@ -167,10 +173,11 @@ class Emulator(Instructions.Instructions):
         op = self.read_memory(address, address+1).hex().upper()
         logger.debug("OP: " + op)
         ins = self.instructions[op]
+        # name = ins.__name__.upper()
         name, amod = ins()
 
-        output = " " + str(address) + "  " + op + "  " + name + \
-            "   " + amod + " -- --  " + \
+        output = "%4.1X" % int.from_bytes(addr, byteorder="big") + "  " + op + "  " + name + \
+            "   " + "%4s" % amod + " -- --  " + \
             " ".join(self.registers[x:x+1].hex().upper()
                      for x in range(2, 6)) + " " + bin(int(self.registers[6:7].hex(), 16)).lstrip('0b').zfill(8) + "\n"
         return output, name

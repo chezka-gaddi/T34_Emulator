@@ -32,15 +32,6 @@ class TestEmulator(unittest.TestCase):
         self.assertEqual(
             output, "300\tA9 04 85 07 A0 00 84 06\n308\tA9 A0 91 06 C8 D0 FB E6\n310\t07\n")
 
-    def test_run_program_no_operand(self):
-        """Test run program with no operand."""
-
-        self.emulator.edit_memory("300", "EA C8 98 48 E8 E8 8A 68 00")
-        output = self.run_program("300")
-
-        self.assertEqual(
-            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n 300  EA  NOP   impl -- --  00 00 00 FF 00100000\n 301  C8  INY    impl -- --  ")
-
 
 if __name__ == '__main__':
     unittest.main()
