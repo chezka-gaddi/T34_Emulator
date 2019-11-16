@@ -168,20 +168,20 @@ class TestInstructions(unittest.TestCase):
     #         " 301  88  DEY   impl -- --  00 02 00 FF 00100000\n" +
     #         " 302  00  BRK   impl -- --  00 02 00 FC 00110100\n")
 
-    # def test_inx_xnegative(self):
-    #     """Test inx instruction."""
-    #     sr = int(self.emulator.registers[3:4].hex(), 16) | 127
-    #     self.emulator.registers[3:4] = sr.to_bytes(1, byteorder='big')
+    def test_inx_xnegative(self):
+        """Test inx instruction."""
+        sr = int(self.emulator.registers[3:4].hex(), 16) | 127
+        self.emulator.registers[3:4] = sr.to_bytes(1, byteorder='big')
 
-    #     self.emulator.edit_memory("300", "EA 88 00")
-    #     output = self.emulator.run_program("300")
-    #     print(output)
+        self.emulator.edit_memory("300", "EA 88 00")
+        output = self.emulator.run_program("300")
+        print(output)
 
-    #     self.assertEqual(
-    #         output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
-    #         " 300  EA  NOP   impl -- --  00 7F 00 FF 00100000\n" +
-    #         " 301  88  DEY   impl -- --  00 80 00 FF 10100000\n" +
-    #         " 302  00  BRK   impl -- --  00 80 00 FC 10110100\n")
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 7F 00 FF 00100000\n" +
+            " 301  88  DEY   impl -- --  00 80 00 FF 10100000\n" +
+            " 302  00  BRK   impl -- --  00 80 00 FC 10110100\n")
 
     def test_lsr(self):
         """Test lsr instruction."""
@@ -211,32 +211,24 @@ class TestInstructions(unittest.TestCase):
             " 301  4A  LSR      A -- --  00 00 00 FF 00100011\n" +
             " 302  00  BRK   impl -- --  00 00 00 FC 00110111\n")
 
-    # def test_pha(self):
-    #     """Test pha instruction."""
-    #     ac = int(self.emulator.registers[2:3].hex(), 16) | 2
-    #     self.emulator.registers[2:3] = ac.to_bytes(1, byteorder='big')
+    def test_pha(self):
+        """Test pha instruction."""
+        ac = int(self.emulator.registers[2:3].hex(), 16) | 2
+        self.emulator.registers[2:3] = ac.to_bytes(1, byteorder='big')
 
-    #     self.emulator.edit_memory("300", "EA 48 00")
-    #     output = self.emulator.run_program("300")
+        self.emulator.edit_memory("300", "EA 48 00")
+        output = self.emulator.run_program("300")
 
-    #     print(output)
-    #     print(" PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
-    #           " 300  EA  NOP   impl -- --  02 00 00 FF 00100000\n" +
-    #           " 301  48  PHA   impl -- --  02 00 00 FE 00100000\n" +
-    #           " 302  00  BRK   impl -- --  02 00 00 FB 00110100\n")
-
-    #     self.assertEqual(
-    #         output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
-    #         " 300  EA  NOP   impl -- --  02 00 00 FF 00100000\n" +
-    #         " 301  48  PHA   impl -- --  02 00 00 FE 00100000\n" +
-    #         " 302  00  BRK   impl -- --  02 00 00 FB 00110100\n")
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  02 00 00 FF 00100000\n" +
+            " 301  48  PHA   impl -- --  02 00 00 FE 00100000\n" +
+            " 302  00  BRK   impl -- --  02 00 00 FB 00110100\n")
 
     def test_php(self):
         """Test php instruction."""
         self.emulator.edit_memory("300", "EA 08 00")
         output = self.emulator.run_program("300")
-
-        print(output)
 
         self.assertEqual(
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
@@ -252,11 +244,151 @@ class TestInstructions(unittest.TestCase):
         self.emulator.edit_memory("300", "EA 48 68 00")
         output = self.emulator.run_program("300")
 
-        print(output)
-
         self.assertEqual(
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
             " 300  EA  NOP   impl -- --  02 00 00 FF 00100000\n" +
             " 301  48  PHA   impl -- --  02 00 00 FE 00100000\n" +
             " 302  68  PLA   impl -- --  02 00 00 FF 00100000\n" +
             " 303  00  BRK   impl -- --  02 00 00 FC 00110100\n")
+
+    def test_rol(self):
+        """Test rol instruction."""
+        ac = int(self.emulator.registers[2:3].hex(), 16) | 128
+        self.emulator.registers[2:3] = ac.to_bytes(1, byteorder='big')
+
+        self.emulator.edit_memory("300", "EA 2A 00")
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  80 00 00 FF 00100000\n" +
+            " 301  2A  ROL      A -- --  01 00 00 FF 00100000\n" +
+            " 302  00  BRK   impl -- --  01 00 00 FC 00110100\n")
+
+    def test_ror(self):
+        """Test ror instruction."""
+        ac = int(self.emulator.registers[2:3].hex(), 16) | 128
+        self.emulator.registers[2:3] = ac.to_bytes(1, byteorder='big')
+
+        self.emulator.edit_memory("300", "EA 6A 00")
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  80 00 00 FF 00100000\n" +
+            " 301  6A  ROR      A -- --  40 00 00 FF 00100000\n" +
+            " 302  00  BRK   impl -- --  40 00 00 FC 00110100\n")
+
+    def test_sec(self):
+        """Test sec instruction."""
+        self.emulator.edit_memory("300", "EA 38 00")
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 00 00 FF 00100000\n" +
+            " 301  38  SEC   impl -- --  00 00 00 FF 00100001\n" +
+            " 302  00  BRK   impl -- --  00 00 00 FC 00110101\n")
+
+    def test_sed(self):
+        """Test sed instruction."""
+        self.emulator.edit_memory("300", "EA F8 00")
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 00 00 FF 00100000\n" +
+            " 301  F8  SED   impl -- --  00 00 00 FF 00101000\n" +
+            " 302  00  BRK   impl -- --  00 00 00 FC 00111100\n")
+
+    def test_sei(self):
+        """Test sei instruction."""
+        self.emulator.edit_memory("300", "EA 78 00")
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 00 00 FF 00100000\n" +
+            " 301  78  SEI   impl -- --  00 00 00 FF 00100100\n" +
+            " 302  00  BRK   impl -- --  00 00 00 FC 00110100\n")
+
+    def test_tax(self):
+        """Test tax instruction."""
+        ac = int(self.emulator.registers[2:3].hex(), 16) | 1
+        self.emulator.registers[2:3] = ac.to_bytes(1, byteorder='big')
+
+        self.emulator.edit_memory("300", "EA AA 00")
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  01 00 00 FF 00100000\n" +
+            " 301  AA  TAX   impl -- --  01 01 00 FF 00100000\n" +
+            " 302  00  BRK   impl -- --  01 01 00 FC 00110100\n")
+
+    def test_tay(self):
+        """Test tay instruction."""
+        ac = int(self.emulator.registers[2:3].hex(), 16) | 1
+        self.emulator.registers[2:3] = ac.to_bytes(1, byteorder='big')
+
+        self.emulator.edit_memory("300", "EA A8 00")
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  01 00 00 FF 00100000\n" +
+            " 301  A8  TAY   impl -- --  01 00 01 FF 00100000\n" +
+            " 302  00  BRK   impl -- --  01 00 01 FC 00110100\n")
+
+    def test_tsx(self):
+        """Test tsx instruction."""
+        self.emulator.edit_memory("300", "EA BA 00")
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 00 00 FF 00100000\n" +
+            " 301  BA  TSX   impl -- --  00 FF 00 FF 10100000\n" +
+            " 302  00  BRK   impl -- --  00 FF 00 FC 10110100\n")
+
+    def test_txa(self):
+        """Test txa instruction."""
+        x = int(self.emulator.registers[3:4].hex(), 16) | 1
+        self.emulator.registers[3:4] = x.to_bytes(1, byteorder='big')
+
+        self.emulator.edit_memory("300", "EA 8A 00")
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 01 00 FF 00100000\n" +
+            " 301  8A  TXA   impl -- --  01 01 00 FF 00100000\n" +
+            " 302  00  BRK   impl -- --  01 01 00 FC 00110100\n")
+
+    def test_txs(self):
+        """Test txs instruction."""
+        x = int(self.emulator.registers[3:4].hex(), 16) | 8
+        self.emulator.registers[3:4] = x.to_bytes(1, byteorder='big')
+
+        self.emulator.edit_memory("300", "EA 9A 00")
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 08 00 FF 00100000\n" +
+            " 301  9A  TXS   impl -- --  00 08 00 08 00100000\n" +
+            " 302  00  BRK   impl -- --  00 08 00 05 00110100\n")
+
+    def test_tya(self):
+        """Test tya instruction."""
+        y = int(self.emulator.registers[4:5].hex(), 16) | 1
+        self.emulator.registers[4:5] = y.to_bytes(1, byteorder='big')
+
+        self.emulator.edit_memory("300", "EA 98 00")
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 00 01 FF 00100000\n" +
+            " 301  98  TYA   impl -- --  01 00 01 FF 00100000\n" +
+            " 302  00  BRK   impl -- --  01 00 01 FC 00110100\n")

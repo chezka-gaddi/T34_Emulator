@@ -229,7 +229,7 @@ class Instructions(Memory.Memory):
         V	Overflow Flag	Not affected
         N	Negative Flag	Set if bit 7 of X is set
         """
-        x = int(self.registers[3:4].hex().upper(), 16) + 1
+        x = int(self.registers[3:4].hex(), 16) + 1
         if x == 0:
             self.set_zero()
         elif x < 0:
@@ -336,11 +336,9 @@ class Instructions(Memory.Memory):
         V	Overflow Flag	Not affected
         N	Negative Flag	Not affected
         """
-        sp = int(self.registers[5:6].hex(), 16) + 255
-        sp = hex(sp)
+        sp = int(self.registers[5:6].hex(), 16)
         self.memory[sp:sp+1] = self.registers[2:3]
-        print(self.read_memory(sp, sp+1))
-        sp -= 256
+        sp -= 1
         self.registers[5:6] = sp.to_bytes(1, byteorder='big')
         return "PHA", "impl"
 
@@ -359,11 +357,9 @@ class Instructions(Memory.Memory):
         V	Overflow Flag	Not affected
         N	Negative Flag	Not affected
         """
-        sp = int(self.registers[5:6].hex(), 16) + 255
-        sp = hex(sp)
+        sp = int(self.registers[5:6].hex(), 16)
         self.memory[sp:sp+1] = self.registers[6:7]
-        sp = int(sp, 16)
-        sp -= 256
+        sp -= 1
         self.registers[5:6] = sp.to_bytes(1, byteorder='big')
         return "PHP", "impl"
 
@@ -380,7 +376,7 @@ class Instructions(Memory.Memory):
         V	Overflow Flag	Not affected
         N	Negative Flag	Set if bit 7 of A is set
         """
-        sp = int(self.registers[5:6], 16) + "0x1"
+        sp = int(self.registers[5:6].hex(), 16) + 1
         self.registers[2:3] = self.read_memory(sp, sp+1)
         self.registers[5:6] = sp.to_bytes(1, byteorder='big')
         return "PLA", "impl"
@@ -417,6 +413,16 @@ class Instructions(Memory.Memory):
         V	Overflow Flag	Not affected
         N	Negative Flag	Set if bit 7 of the result is set
         """
+        ac = int(self.registers[2:3].hex(), 16)
+        carry = ac & (1 << 7)
+        ac = ac << 1
+        if carry == 0:
+            ac = ac & ~1
+        else:
+            ac = ac | 1
+        if ac > 255:
+            ac = 1
+        self.registers[2:3] = ac.to_bytes(1, byteorder='big')
         return "ROL", "A"
 
     def ror(self):
@@ -434,6 +440,16 @@ class Instructions(Memory.Memory):
         V	Overflow Flag	Not affected
         N	Negative Flag	Set if bit 7 of the result is set
         """
+        ac = int(self.registers[2:3].hex(), 16)
+        carry = ac & 1
+        ac = ac >> 1
+        if carry == 0:
+            ac = ac & ~(1 << 7)
+        else:
+            ac = ac | (1 << 7)
+        if ac > 255:
+            ac = 1
+        self.registers[2:3] = ac.to_bytes(1, byteorder='big')
         return "ROR", "A"
 
     def sec(self):
@@ -511,6 +527,12 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Set if bit 7 of X is set
         """
         self.registers[3:4] = self.registers[2:3]
+        ac = int(self.registers[2:3].hex(), 16)
+        sign = (ac & (1 << 7)) >> 7
+        if ac == 0:
+            self.set_zero
+        elif sign == 1:
+            self.set_negative()
         return "TAX", "impl"
 
     def tay(self):
@@ -531,6 +553,12 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Set if bit 7 of Y is set
         """
         self.registers[4:5] = self.registers[2:3]
+        ac = int(self.registers[2:3].hex(), 16)
+        sign = (ac & (1 << 7)) >> 7
+        if ac == 0:
+            self.set_zero
+        elif sign == 1:
+            self.set_negative()
         return "TAY", "impl"
 
     def tsx(self):
@@ -551,6 +579,12 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Set if bit 7 of X is set
         """
         self.registers[3:4] = self.registers[5:6]
+        sp = int(self.registers[5:6].hex(), 16)
+        sign = (sp & (1 << 7)) >> 7
+        if sp == 0:
+            self.set_zero
+        elif sign == 1:
+            self.set_negative()
         return "TSX", "impl"
 
     def txa(self):
@@ -571,6 +605,12 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Set if bit 7 of A is set
         """
         self.registers[2:3] = self.registers[3:4]
+        x = int(self.registers[3:4].hex(), 16)
+        sign = (x & (1 << 7)) >> 7
+        if x == 0:
+            self.set_zero
+        elif sign == 1:
+            self.set_negative()
         return "TXA", "impl"
 
     def txs(self):
@@ -611,6 +651,12 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Set if bit 7 of A is set
         """
         self.registers[2:3] = self.registers[4:5]
+        y = int(self.registers[4:5].hex(), 16)
+        sign = (y & (1 << 7)) >> 7
+        if y == 0:
+            self.set_zero
+        elif sign == 1:
+            self.set_negative()
         return "TYA", "impl"
 
     def set_zero(self):
