@@ -95,17 +95,24 @@ class Instructions(Memory.Memory):
         V  	Overflow Flag	Not affected
         N	Negative Flag	Not affected
         """
-        self.sei()
-        sp = int(self.registers[5:6].hex(), 16)
+        sp = int(self.registers[5:6].hex(), 16) + 256
         pc = int(self.registers[:2].hex(), 16) + 2
+
+        # Push program counter to stack
         self.memory[sp:sp+2] = pc.to_bytes(2, byteorder='big')
         sp -= 2
+
         sr = int(self.registers[6:7].hex(), 16)
+
+        # Set interrupt and break flags
+        sr = sr | (1 << 2)
+        sr = sr | (1 << 4)
+
+        # Push current processor status to stack
         self.memory[sp:sp+1] = sr.to_bytes(1, byteorder='big')
         sp -= 1
+        sp -= 256
         self.registers[5:6] = sp.to_bytes(1, byteorder='big')
-
-        sr = sr | (1 << 4)
         self.registers[6:7] = sr.to_bytes(1, byteorder='big')
         return "BRK", "impl"
 
@@ -350,7 +357,8 @@ class Instructions(Memory.Memory):
         """
         sp = int(self.registers[5:6].hex(), 16)
         sp += 256
-        self.memory[sp:sp+1] = self.registers[2:3]
+        self.write_memory(sp, self.registers[2:3])
+        # self.memory[sp:sp+1] = self.registers[2:3]
         sp -= 1
         sp -= 256
         self.registers[5:6] = sp.to_bytes(1, byteorder='big')
