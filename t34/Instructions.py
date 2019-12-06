@@ -357,8 +357,8 @@ class Instructions(Memory.Memory):
         """
         sp = int(self.registers[5:6].hex(), 16)
         sp += 256
-        self.write_memory(sp, self.registers[2:3])
-        # self.memory[sp:sp+1] = self.registers[2:3]
+        # self.write_memory(sp, self.registers[2:3])
+        self.memory[sp:sp+1] = self.registers[2:3]
         sp -= 1
         sp -= 256
         self.registers[5:6] = sp.to_bytes(1, byteorder='big')
