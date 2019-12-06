@@ -1,4 +1,8 @@
+"""
+.. py:module:: Instructions
+"""
 from . import Memory
+# :synopsis: Instructions class that maintains all of the instructions to be executed by the T34.
 
 
 class Instructions(Memory.Memory):
@@ -36,6 +40,21 @@ class Instructions(Memory.Memory):
             "F8": self.sed
         }
 
+    def adc(self):
+        """
+        This instruction adds the contents of a memory location to the accumulator together with the carry bit. If overflow occurs the carry bit is set, this enables multiple byte addition to be performed.
+
+        Processor Status after use:
+
+        C - Set if overflow in bit 7
+        Z - Set if A = 0
+        I - Not affected
+        D - Not affected
+        B - Not affected
+        V - Set if sign bit is incorrect
+        N - Set if bit 7 set
+        """
+
     def asl(self):
         """
         This operation shifts all the bits of the accumulator or memory contents one bit left. Bit 0 is set to 0 and bit 7 is placed in the carry flag. The effect of this operation is to multiply the memory contents by 2 (ignoring 2's complement considerations), setting the carry if the result will not fit in 8 bits.
@@ -52,11 +71,15 @@ class Instructions(Memory.Memory):
         """
         ac = int(self.registers[2:3].hex(), 16)
         carry = (ac & (1 << 7)) >> 7
+
         if carry == 0:
             self.clc()
         else:
             self.sec()
         ac = ac << 1
+        ac &= 0xFF
+        self.check_zero(ac)
+        self.check_negative(ac)
         self.registers[2:3] = ac.to_bytes(1, byteorder='big')
         return "ASL", "   A"
 
@@ -175,13 +198,11 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Set if bit 7 of X is set
         """
         x = int(self.registers[3:4].hex().upper(), 16) - 1
-        if x == 0:
-            self.set_zero()
-        elif x < 0:
-            self.set_negative()
+        self.check_zero(x)
+
+        self.check_negative(x)
+        if x < 0:
             x = 255
-        elif x > 127:
-            self.set_negative()
         self.registers[3:4] = x.to_bytes(1, byteorder='big')
 
         return "DEX", "impl"
@@ -203,13 +224,10 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Set if bit 7 of Y is set
         """
         y = int(self.registers[4:5].hex().upper(), 16) - 1
-        if y == 0:
-            self.set_zero()
-        elif y < 0:
-            self.set_negative()
+        if y < 0:
             y = 255
-        elif y > 127:
-            self.set_negative()
+        self.check_negative(y)
+        self.check_zero(y)
         self.registers[4:5] = y.to_bytes(1, byteorder='big')
         return "DEY", "impl"
 
@@ -230,14 +248,11 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Set if bit 7 of X is set
         """
         x = int(self.registers[3:4].hex(), 16) + 1
-        if x == 0:
-            self.set_zero()
-        elif x < 0:
-            self.set_negative()
+        sign = (x & (1 << 7)) >> 7
+        self.check_zero(x)
+        self.check_negative_sign(sign)
+        if sign == 1:
             x = 255
-        elif x > 127:
-            self.set_negative()
-
         self.registers[3:4] = x.to_bytes(1, byteorder='big')
         return "INX", "impl"
 
@@ -257,14 +272,11 @@ class Instructions(Memory.Memory):
         V	Overflow Flag	Not affected
         N	Negative Flag	Set if bit 7 of Y is set
         """
-        y = int(self.registers[4:5].hex().upper(), 16) + 1
-        if y == 0:
-            self.set_zero()
-        elif y < 0:
-            self.set_negative()
+        y = int(self.registers[4:5].hex(), 16) + 1
+        self.check_zero(y)
+        self.check_negative(y)
+        if y < 0:
             y = 255
-        elif y > 127:
-            self.set_negative()
         self.registers[4:5] = y.to_bytes(1, byteorder='big')
         return "INY", "impl"
 
@@ -337,8 +349,10 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Not affected
         """
         sp = int(self.registers[5:6].hex(), 16)
+        sp += 256
         self.memory[sp:sp+1] = self.registers[2:3]
         sp -= 1
+        sp -= 256
         self.registers[5:6] = sp.to_bytes(1, byteorder='big')
         return "PHA", "impl"
 
@@ -358,8 +372,10 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Not affected
         """
         sp = int(self.registers[5:6].hex(), 16)
+        sp += 256
         self.memory[sp:sp+1] = self.registers[6:7]
         sp -= 1
+        sp -= 256
         self.registers[5:6] = sp.to_bytes(1, byteorder='big')
         return "PHP", "impl"
 
@@ -377,7 +393,9 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Set if bit 7 of A is set
         """
         sp = int(self.registers[5:6].hex(), 16) + 1
+        sp += 256
         self.registers[2:3] = self.read_memory(sp, sp+1)
+        sp -= 256
         self.registers[5:6] = sp.to_bytes(1, byteorder='big')
         return "PLA", "impl"
 
@@ -396,6 +414,10 @@ class Instructions(Memory.Memory):
         V	Overflow Flag	Set from stack
         N	Negative Flag	Set from stack
         """
+        sp = int(self.registers[5:6].hex(), 16) + 1
+        self.registers[5:6] = sp.to_bytes(1, byteorder='big')
+        sp += 256
+        self.registers[6:7] = self.read_memory(sp, sp+1)
         return "PLP", "impl"
 
     def rol(self):
@@ -414,14 +436,22 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Set if bit 7 of the result is set
         """
         ac = int(self.registers[2:3].hex(), 16)
-        carry = ac & (1 << 7)
+        ov = (ac & (1 << 7)) >> 7
+        ac = ac & ~(1 << 7)
         ac = ac << 1
-        if carry == 0:
-            ac = ac & ~1
-        else:
+
+        if self.carry_isSet():
             ac = ac | 1
+
+        if ov == 0:
+            self.clc()
+        else:
+            self.sec()
+
         if ac > 255:
             ac = 1
+        self.check_negative(ac)
+        self.check_zero(ac)
         self.registers[2:3] = ac.to_bytes(1, byteorder='big')
         return "ROL", "A"
 
@@ -441,14 +471,23 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Set if bit 7 of the result is set
         """
         ac = int(self.registers[2:3].hex(), 16)
-        carry = ac & 1
+        ov = ac & 1
         ac = ac >> 1
-        if carry == 0:
-            ac = ac & ~(1 << 7)
-        else:
+
+        if self.carry_isSet():
             ac = ac | (1 << 7)
+        else:
+            ac = ac & ~(1 << 7)
+
+        if ov == 0:
+            self.clc()
+        else:
+            self.sec()
+
         if ac > 255:
             ac = 1
+        self.check_negative(ac)
+        self.check_zero(ac)
         self.registers[2:3] = ac.to_bytes(1, byteorder='big')
         return "ROR", "A"
 
@@ -529,10 +568,8 @@ class Instructions(Memory.Memory):
         self.registers[3:4] = self.registers[2:3]
         ac = int(self.registers[2:3].hex(), 16)
         sign = (ac & (1 << 7)) >> 7
-        if ac == 0:
-            self.set_zero
-        elif sign == 1:
-            self.set_negative()
+        self.check_zero(ac)
+        self.check_negative_sign(sign)
         return "TAX", "impl"
 
     def tay(self):
@@ -555,10 +592,8 @@ class Instructions(Memory.Memory):
         self.registers[4:5] = self.registers[2:3]
         ac = int(self.registers[2:3].hex(), 16)
         sign = (ac & (1 << 7)) >> 7
-        if ac == 0:
-            self.set_zero
-        elif sign == 1:
-            self.set_negative()
+        self.check_zero(ac)
+        self.check_negative_sign(sign)
         return "TAY", "impl"
 
     def tsx(self):
@@ -581,10 +616,8 @@ class Instructions(Memory.Memory):
         self.registers[3:4] = self.registers[5:6]
         sp = int(self.registers[5:6].hex(), 16)
         sign = (sp & (1 << 7)) >> 7
-        if sp == 0:
-            self.set_zero
-        elif sign == 1:
-            self.set_negative()
+        self.check_zero(sp)
+        self.check_negative_sign(sign)
         return "TSX", "impl"
 
     def txa(self):
@@ -607,10 +640,8 @@ class Instructions(Memory.Memory):
         self.registers[2:3] = self.registers[3:4]
         x = int(self.registers[3:4].hex(), 16)
         sign = (x & (1 << 7)) >> 7
-        if x == 0:
-            self.set_zero
-        elif sign == 1:
-            self.set_negative()
+        self.check_zero(x)
+        self.check_negative_sign(sign)
         return "TXA", "impl"
 
     def txs(self):
@@ -653,18 +684,6 @@ class Instructions(Memory.Memory):
         self.registers[2:3] = self.registers[4:5]
         y = int(self.registers[4:5].hex(), 16)
         sign = (y & (1 << 7)) >> 7
-        if y == 0:
-            self.set_zero
-        elif sign == 1:
-            self.set_negative()
+        self.check_zero(y)
+        self.check_negative_sign(sign)
         return "TYA", "impl"
-
-    def set_zero(self):
-        """Set zero bit to 1"""
-        sr = int(self.registers[6:7].hex().upper(), 16) | 2
-        self.registers[6:7] = sr.to_bytes(1, byteorder='big')
-
-    def set_negative(self):
-        """Set negative bit to 1"""
-        sr = int(self.registers[6:7].hex().upper(), 16) | (1 << 7)
-        self.registers[6:7] = sr.to_bytes(1, byteorder='big')

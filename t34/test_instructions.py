@@ -153,35 +153,30 @@ class TestInstructions(unittest.TestCase):
             " 301  88  DEY   impl -- --  00 00 FF FF 10100000\n" +
             " 302  00  BRK   impl -- --  00 00 FF FC 10110100\n")
 
-    # def test_inx(self):
-    #     """Test inx instruction."""
-    #     sr = int(self.emulator.registers[3:4].hex(), 16) | 1
-    #     self.emulator.registers[3:4] = sr.to_bytes(1, byteorder='big')
-
-    #     self.emulator.edit_memory("300", "EA 88 00")
-    #     output = self.emulator.run_program("300")
-    #     print(output)
-
-    #     self.assertEqual(
-    #         output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
-    #         " 300  EA  NOP   impl -- --  00 01 00 FF 00100000\n" +
-    #         " 301  88  DEY   impl -- --  00 02 00 FF 00100000\n" +
-    #         " 302  00  BRK   impl -- --  00 02 00 FC 00110100\n")
-
-    def test_inx_xnegative(self):
+    def test_inx(self):
         """Test inx instruction."""
-        sr = int(self.emulator.registers[3:4].hex(), 16) | 127
+        sr = int(self.emulator.registers[3:4].hex(), 16) | 1
         self.emulator.registers[3:4] = sr.to_bytes(1, byteorder='big')
 
-        self.emulator.edit_memory("300", "EA 88 00")
+        self.emulator.edit_memory("300", "EA E8 00")
         output = self.emulator.run_program("300")
-        print(output)
 
         self.assertEqual(
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
-            " 300  EA  NOP   impl -- --  00 7F 00 FF 00100000\n" +
-            " 301  88  DEY   impl -- --  00 80 00 FF 10100000\n" +
-            " 302  00  BRK   impl -- --  00 80 00 FC 10110100\n")
+            " 300  EA  NOP   impl -- --  00 01 00 FF 00100000\n" +
+            " 301  E8  INX   impl -- --  00 02 00 FF 00100000\n" +
+            " 302  00  BRK   impl -- --  00 02 00 FC 00110100\n")
+
+    def test_iny(self):
+        """Test iny instruction."""
+        self.emulator.edit_memory("300", "EA C8 00")
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 00 00 FF 00100000\n" +
+            " 301  C8  INY   impl -- --  00 00 01 FF 00100000\n" +
+            " 302  00  BRK   impl -- --  00 00 01 FC 00110100\n")
 
     def test_lsr(self):
         """Test lsr instruction."""

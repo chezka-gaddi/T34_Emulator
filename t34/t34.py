@@ -4,6 +4,8 @@ import argparse
 import sys
 import logging
 from .Emulator import Emulator
+from .Instructions import Instructions
+from .Memory import Memory
 
 
 def parse_args():
