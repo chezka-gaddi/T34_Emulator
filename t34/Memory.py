@@ -83,23 +83,73 @@ class Memory:
         """
         return int(self.registers[2:3].hex(), 16)
 
-    def write_AC(self, value: int):
-        """Write to the AC register.
+    def write_X(self, value: int):
+        """Write to the X register.
 
         Arguments:
-            value {int} -- new AC
+            value {int} -- new X
         """
         self.check_zero(value)
         self.check_negative(value)
-        self.registers[2:3] = value.to_bytes(1, byteorder='big')
+        self.registers[3:4] = value.to_bytes(1, byteorder='big')
 
-    def get_AC(self) -> int:
-        """Retrieve current address stored in AC register.
+    def get_X(self) -> int:
+        """Retrieve current address stored in X register.
 
         Returns:
-            int -- address stored in AC
+            int -- address stored in X
         """
-        return int(self.registers[2:3].hex(), 16)
+        return int(self.registers[3:4].hex(), 16)
+
+    def write_Y(self, value: int):
+        """Write to the Y register.
+
+        Arguments:
+            value {int} -- new Y
+        """
+        self.check_zero(value)
+        self.check_negative(value)
+        self.registers[4:5] = value.to_bytes(1, byteorder='big')
+
+    def get_Y(self) -> int:
+        """Retrieve current address stored in Y register.
+
+        Returns:
+            int -- address stored in Y
+        """
+        return int(self.registers[4:5].hex(), 16)
+
+    def write_SP(self, value: int):
+        """Write to the SP register.
+
+        Arguments:
+            value {int} -- new SP
+        """
+        self.registers[5:6] = value.to_bytes(1, byteorder='big')
+
+    def get_SP(self) -> int:
+        """Retrieve current address stored in SP register.
+
+        Returns:
+            int -- address stored in SP
+        """
+        return int(self.registers[5:6].hex(), 16)
+
+    def write_SR(self, value: int):
+        """Write to the SR register.
+
+        Arguments:
+            value {int} -- new SR
+        """
+        self.registers[6:7] = value.to_bytes(1, byteorder='big')
+
+    def get_SR(self) -> int:
+        """Retrieve current address stored in SR register.
+
+        Returns:
+            int -- address stored in SR
+        """
+        return int(self.registers[6:7].hex(), 16)
 
     def carry_isSet(self):
         """
