@@ -10,11 +10,22 @@ Address = TypeVar("Address", bound=int)
 
 class Memory:
     def __init__(self):
+        """Initialize all of the Emulator's memory."""
         self.memory = bytearray(65536)
         self.registers = bytearray(8)
         self.initialize_registers()
 
     def initialize_registers(self):
+        """
+        Initialize registers to initial values.
+
+        PC: 0
+        AC: 0
+        X: 0
+        Y: 0
+        SP: 0xFF
+        SR: 0x20
+        """
         self.registers = bytearray([0, 0, 0, 0, 0, 0, 0, 0])
         sp = int(self.registers[5:6].hex(), 16) | 255
         self.registers[5:6] = sp.to_bytes(1, byteorder='big')
@@ -39,7 +50,56 @@ class Memory:
         """
         start = int(address, base=16)
         self.memory[start:start+len(data)] = data
-        # self.memory[int(address, 16):] = data[:]
+
+    def write_PC(self, value: int):
+        """Write to the PC register.
+
+        Arguments:
+            value {int} -- new PC
+        """
+        self.registers[0:2] = value.to_bytes(2, byteorder='big')
+
+    def get_PC(self) -> int:
+        """Retrieve current address stored in PC register.
+
+        Returns:
+            int -- address stored in PC
+        """
+        return int(self.registers[0:2].hex(), 16)
+
+    def write_AC(self, value: int):
+        """Write to the AC register.
+
+        Arguments:
+            value {int} -- new AC
+        """
+        self.registers[2:3] = value.to_bytes(1, byteorder='big')
+
+    def get_AC(self) -> int:
+        """Retrieve current address stored in AC register.
+
+        Returns:
+            int -- address stored in AC
+        """
+        return int(self.registers[2:3].hex(), 16)
+
+    def write_AC(self, value: int):
+        """Write to the AC register.
+
+        Arguments:
+            value {int} -- new AC
+        """
+        self.check_zero(value)
+        self.check_negative(value)
+        self.registers[2:3] = value.to_bytes(1, byteorder='big')
+
+    def get_AC(self) -> int:
+        """Retrieve current address stored in AC register.
+
+        Returns:
+            int -- address stored in AC
+        """
+        return int(self.registers[2:3].hex(), 16)
 
     def carry_isSet(self):
         """

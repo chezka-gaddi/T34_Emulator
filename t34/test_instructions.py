@@ -257,8 +257,8 @@ class TestInstructions(unittest.TestCase):
         self.assertEqual(
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
             " 300  EA  NOP   impl -- --  80 00 00 FF 00100000\n" +
-            " 301  2A  ROL      A -- --  01 00 00 FF 00100000\n" +
-            " 302  00  BRK   impl -- --  01 00 00 FC 00110100\n")
+            " 301  2A  ROL      A -- --  00 00 00 FF 00100011\n" +
+            " 302  00  BRK   impl -- --  00 00 00 FC 00110111\n")
 
     def test_ror(self):
         """Test ror instruction."""
