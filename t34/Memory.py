@@ -12,7 +12,7 @@ class Memory:
     def __init__(self):
         """Initialize all of the Emulator's memory."""
         self.memory = bytearray(65536)
-        self.registers = bytearray(8)
+        self.registers = bytearray(7)
         self.initialize_registers()
 
     def initialize_registers(self):
@@ -45,8 +45,8 @@ class Memory:
         """
         Writes data to a specific memory address.
 
-        :param str address: HEX address of the memory to be edited.
-        :param str data: data to store into the memory address.
+        :param Address address: HEX address of the memory to be edited.
+        :param ByteString data: data to store into the memory address.
         """
         start = int(address, base=16)
         self.memory[start:start+len(data)] = data
@@ -73,6 +73,8 @@ class Memory:
         Arguments:
             value {int} -- new AC
         """
+        self.check_zero(value)
+        self.check_negative(value)
         self.registers[2:3] = value.to_bytes(1, byteorder='big')
 
     def get_AC(self) -> int:
@@ -151,6 +153,24 @@ class Memory:
         """
         return int(self.registers[6:7].hex(), 16)
 
+    def check_carry(self, value: int) -> bool:
+        if value > 256:
+            self.set_carry()
+            return True
+        else:
+            self.unset_carry()
+            return False
+
+    def set_carry(self):
+        """Set carry bit to 1"""
+        sr = int(self.registers[6:7].hex(), 16) | 1
+        self.registers[6:7] = sr.to_bytes(1, byteorder='big')
+
+    def unset_carry(self):
+        """Set carry bit to 0"""
+        sr = int(self.registers[6:7].hex().upper(), 16) & ~1
+        self.registers[6:7] = sr.to_bytes(1, byteorder='big')
+
     def carry_isSet(self):
         """
         Checks if carry bit is set.
@@ -183,10 +203,13 @@ class Memory:
         Arguments:
             value {int} -- value to check sign
         """
-        if value < 0 or value > 127:
+        sign = (value & (1 << 7)) >> 7
+        if sign == 1:
             self.set_negative()
+            return True
         else:
             self.unset_negative()
+            return False
 
     def set_negative(self):
         """Set negative bit to 1"""
@@ -194,7 +217,7 @@ class Memory:
         self.registers[6:7] = sr.to_bytes(1, byteorder='big')
 
     def unset_negative(self):
-        """Set negative bit to 1"""
+        """Set negative bit to 0"""
         sr = int(self.registers[6:7].hex().upper(), 16) & ~(1 << 7)
         self.registers[6:7] = sr.to_bytes(1, byteorder='big')
 
@@ -218,4 +241,14 @@ class Memory:
     def unset_zero(self):
         """Unset zero bit"""
         sr = int(self.registers[6:7].hex().upper(), 16) & ~2
+        self.registers[6:7] = sr.to_bytes(1, byteorder='big')
+
+    def set_overflow(self):
+        """Set overflow bit"""
+        sr = int(self.registers[6:7].hex(), 16) | 64
+        self.registers[6:7] = sr.to_bytes(1, byteorder='big')
+
+    def unset_overflow(self):
+        """Unset overflow bit"""
+        sr = int(self.registers[6:7].hex(), 16) & ~64
         self.registers[6:7] = sr.to_bytes(1, byteorder='big')

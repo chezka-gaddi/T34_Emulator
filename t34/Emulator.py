@@ -60,7 +60,7 @@ class Emulator(Instructions.Instructions):
             cidx = command.find(":")
 
             # Run program
-            if command.endswith("R"):
+            if command.endswith("R") or command.endswith("r"):
                 output = self.run_program(command[:-1])
                 print(output)
 
@@ -76,8 +76,11 @@ class Emulator(Instructions.Instructions):
 
             # Access memory address
             elif pidx == -1:
-                output = self.access_memory(command)
-                print(output)
+                try:
+                    output = self.access_memory(command)
+                    print(output)
+                except:
+                    pass
 
             else:
                 exit()
@@ -152,7 +155,7 @@ class Emulator(Instructions.Instructions):
         while True:
             out, flag = self.execute_instruction(pc)
             output += out
-            pc += 1
+            pc = self.get_PC() + 1
             if flag == "BRK":
                 break
 
@@ -173,11 +176,21 @@ class Emulator(Instructions.Instructions):
         op = self.read_memory(address, address+1).hex().upper()
         logger.debug("OP: " + op)
         ins = self.instructions[op]
-        # name = ins.__name__.upper()
-        name, amod = ins()
+
+        data = ins()
+        name = data[0]
+        amod = data[1]
+        oprnd1 = "--"
+        oprnd2 = "--"
+
+        if len(data) == 3:
+            oprnd1 = hex(data[2]).lstrip("0x").upper()
+        elif len(data) == 4:
+            oprnd1 == data[3]
+        # name, amod = ins()
 
         output = "%4.1X" % int.from_bytes(addr, byteorder="big") + "  " + op + "  " + name + \
-            "   " + "%4s" % amod + " -- --  " + \
+            "   " + "%4s" % amod + " " + oprnd1.zfill(2) + " " + oprnd2.zfill(2) + "  " + \
             " ".join(self.registers[x:x+1].hex().upper()
                      for x in range(2, 6)) + " " + bin(int(self.registers[6:7].hex(), 16)).lstrip('0b').zfill(8) + "\n"
         return output, name

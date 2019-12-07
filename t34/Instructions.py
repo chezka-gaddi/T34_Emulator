@@ -4,6 +4,9 @@
 from . import Memory
 # :synopsis: Instructions class that maintains all of the instructions to be executed by the T34.
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class Instructions(Memory.Memory):
 
@@ -12,16 +15,24 @@ class Instructions(Memory.Memory):
         self.name = ""
         self.instructions = {
             "00": self.brk,
+            "06": self.asl_zpg,
             "08": self.php,
+            "09": self.ora_imm,
             "0A": self.asl,
             "18": self.clc,
+            "24": self.bit_zpg,
             "28": self.plp,
+            "29": self.and_imm,
             "2A": self.rol,
             "38": self.sec,
+            "45": self.eor_zpg,
             "48": self.pha,
+            "49": self.eor_imm,
             "4A": self.lsr,
             "58": self.cli,
+            "65": self.adc_zpg,
             "68": self.pla,
+            "69": self.adc_imm,
             "6A": self.ror,
             "78": self.sei,
             "88": self.dey,
@@ -29,18 +40,33 @@ class Instructions(Memory.Memory):
             "98": self.tya,
             "9A": self.txs,
             "B8": self.clv,
+            "A0": self.ldy_imm,
+            "A2": self.ldx_imm,
+            "A4": self.ldy_zpg,
+            "A5": self.lda_zpg,
+            "A6": self.ldx_zpg,
             "A8": self.tay,
+            "A9": self.lda_imm,
             "AA": self.tax,
             "BA": self.tsx,
+            "C0": self.cpy_imm,
+            "C4": self.cpy_zpg,
+            "C5": self.cmp_zpg,
+            "C6": self.dec_zpg,
             "C8": self.iny,
+            "C9": self.cmp_imm,
             "CA": self.dex,
             "D8": self.cld,
+            "E0": self.cpx_imm,
+            "E4": self.cpx_zpg,
+            "E6": self.inc_zpg,
             "E8": self.inx,
+            "E9": self.sbc_imm,
             "EA": self.nop,
             "F8": self.sed
         }
 
-    def adc(self):
+    def adc_imm(self):
         """
         This instruction adds the contents of a memory location to the accumulator together with the carry bit. If overflow occurs the carry bit is set, this enables multiple byte addition to be performed.
 
@@ -54,6 +80,132 @@ class Instructions(Memory.Memory):
         V - Set if sign bit is incorrect
         N - Set if bit 7 set
         """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        mem_value = self.read_memory(mem_address, mem_address + 1).hex()
+        mem_value = int(mem_value, 16)
+        mem_sign = self.check_negative(mem_value)
+        ac = self.get_AC()
+        ac_sign = self.check_negative(ac)
+
+        carry = 1 if self.carry_isSet() else 0
+
+        logger.debug("Adding Immediate: " +
+                     bin(ac) + " " + bin(mem_value) + " " + bin(carry))
+        ac = ac + mem_value + carry
+
+        new_ac_sign = self.check_negative(ac)
+
+        if ac_sign & mem_sign != new_ac_sign:
+            logger.debug("Overflow")
+            self.set_overflow()
+        else:
+            self.unset_overflow()
+
+        if self.check_carry(ac):
+            ac -= 256
+        self.write_AC(ac)
+
+        return "ADC", "   #", mem_value
+
+    def adc_zpg(self):
+        """
+        This instruction adds the contents of a memory location to the accumulator together with the carry bit. If overflow occurs the carry bit is set, this enables multiple byte addition to be performed.
+
+        Processor Status after use:
+
+        C - Set if overflow in bit 7
+        Z - Set if A = 0
+        I - Not affected
+        D - Not affected
+        B - Not affected
+        V - Set if sign bit is incorrect
+        N - Set if bit 7 set
+        """
+        # todo: Figure out if what I need to do is use the next number as the address to get the actual value
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
+        zpg_address = int(zpg_address, 16)
+        zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        zpg_value = int(zpg_value, 16)
+
+        mem_sign = self.check_negative(zpg_value)
+        ac = self.get_AC()
+        ac_sign = self.check_negative(ac)
+
+        carry = 1 if self.carry_isSet() else 0
+
+        logger.debug("Adding Immediate: " +
+                     bin(ac) + " " + bin(zpg_value) + " " + bin(carry))
+        ac = ac + zpg_value + carry
+
+        new_ac_sign = self.check_negative(ac)
+
+        if ac_sign & mem_sign != new_ac_sign:
+            logger.debug("Overflow")
+            self.set_overflow()
+        else:
+            self.unset_overflow()
+
+        if self.check_carry(ac):
+            ac -= 256
+        self.write_AC(ac)
+
+        return "ADC", " zpg", zpg_address
+
+    def and_imm(self):
+        """
+        A logical AND is performed, bit by bit, on the accumulator contents using the contents of a byte of memory.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if A = 0
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        mem_value = self.read_memory(mem_address, mem_address + 1).hex()
+        mem_value = int(mem_value, 16)
+        ac = self.get_AC()
+
+        ac = ac & mem_value
+
+        self.write_AC(ac)
+        return "AND", "   #", mem_value
+
+    def and_zpg(self):
+        """
+        A logical AND is performed, bit by bit, on the accumulator contents using the contents of a byte of memory.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if A = 0
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
+        zpg_address = int(zpg_address, 16)
+        zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        zpg_value = int(zpg_value, 16)
+
+        ac = self.get_AC()
+
+        ac = ac & zpg_value
+
+        self.write_AC(ac)
+        return "AND", " zpg", zpg_address
 
     def asl(self):
         """
@@ -82,6 +234,80 @@ class Instructions(Memory.Memory):
         self.check_negative(ac)
         self.registers[2:3] = ac.to_bytes(1, byteorder='big')
         return "ASL", "   A"
+
+    def asl_zpg(self):
+        """
+        This operation shifts all the bits of the accumulator or memory contents one bit left. Bit 0 is set to 0 and bit 7 is placed in the carry flag. The effect of this operation is to multiply the memory contents by 2 (ignoring 2's complement considerations), setting the carry if the result will not fit in 8 bits.
+
+        Processor Status after use:
+
+        C - Set to contents of old bit 7
+        Z - Set if A = 0
+        I - Not affected
+        D - Not affected
+        B - Not affected
+        V - Not affected
+        N - Set if bit 7 of the result is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
+        zpg_address = int(zpg_address, 16)
+        zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        zpg_value = int(zpg_value, 16)
+
+        carry = (zpg_value & (1 << 7)) >> 7
+
+        if carry == 0:
+            self.clc()
+        else:
+            self.sec()
+
+        zpg_value = zpg_value << 1
+        zpg_value &= 0xFF
+        self.check_zero(zpg_value)
+        self.check_negative(zpg_value)
+        self.write_memory(zpg_address, zpg_value)
+        return "ASL", " zpg", zpg_address
+
+    def bit_zpg(self):
+        """
+        A & M, N = M7, V = M6
+
+        This instructions is used to test if one or more bits are set in a target memory location. The mask pattern in A is ANDed with the value in memory to set or clear the zero flag, but the result is not kept. Bits 7 and 6 of the value from memory are copied into the N and V flags.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if the result if the AND is zero
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Set to bit 6 of the memory value
+        N	Negative Flag	Set to bit 7 of the memory value
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
+        zpg_address = int(zpg_address, 16)
+        zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        zpg_value = int(zpg_value, 16)
+
+        ac = self.get_AC()
+        value = ac & zpg_value
+        self.check_zero(value)
+
+        if value & (1 << 6):
+            self.set_overflow()
+        else:
+            self.unset_overflow()
+
+        if value & (1 << 7):
+            self.set_negative()
+        else:
+            self.unset_negative()
+
+        return "BIT", " zpg", zpg_address
 
     def brk(self):
         """
@@ -188,6 +414,225 @@ class Instructions(Memory.Memory):
         self.registers[6:7] = sr.to_bytes(1, byteorder='big')
         return "CLV", "impl"
 
+    def cmp_imm(self):
+        """
+        Z,C,N = A-M
+
+        This instruction compares the contents of the accumulator with another memory held value and sets the zero and carry flags as appropriate.
+
+        Processor Status after use:
+
+        C	Carry Flag	Set if A >= M
+        Z	Zero Flag	Set if A = M
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of the result is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        mem_value = self.read_memory(mem_address, mem_address + 1).hex()
+        mem_value = int(mem_value, 16)
+        ac = self.get_AC()
+
+        value = ac + (mem_value ^ 255) + 1
+
+        self.check_carry(value)
+        self.check_negative(value)
+        self.check_zero(value)
+
+        return "CMP", "   #", mem_value
+
+    def cmp_zpg(self):
+        """
+        Z,C,N = A-M
+
+        This instruction compares the contents of the accumulator with another memory held value and sets the zero and carry flags as appropriate.
+
+        Processor Status after use:
+
+        C	Carry Flag	Set if A >= M
+        Z	Zero Flag	Set if A = M
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of the result is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
+        zpg_address = int(zpg_address, 16)
+        zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        zpg_value = int(zpg_value, 16)
+
+        ac = self.get_AC()
+
+        value = ac + (zpg_value ^ 255) + 1
+
+        self.check_carry(value)
+        self.check_negative(value)
+        self.check_zero(value)
+
+        return "CMP", " zpg", zpg_address
+
+    def cpx_imm(self):
+        """
+        Z,C,N = X-M
+
+        This instruction compares the contents of the X register with another memory held value and sets the zero and carry flags as appropriate.
+
+        Processor Status after use:
+
+        C	Carry Flag	Set if X >= M
+        Z	Zero Flag	Set if X = M
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of the result is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        mem_value = self.read_memory(mem_address, mem_address + 1).hex()
+        mem_value = int(mem_value, 16)
+        x = self.get_X()
+
+        value = x + (mem_value ^ 255) + 1
+
+        self.check_carry(value)
+        self.check_negative(value)
+        self.check_zero(value)
+
+        return "CPX", "   #", mem_value
+
+    def cpx_zpg(self):
+        """
+        Z,C,N = X-M
+
+        This instruction compares the contents of the X register with another memory held value and sets the zero and carry flags as appropriate.
+
+        Processor Status after use:
+
+        C	Carry Flag	Set if X >= M
+        Z	Zero Flag	Set if X = M
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of the result is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
+        zpg_address = int(zpg_address, 16)
+        zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        zpg_value = int(zpg_value, 16)
+
+        x = self.get_X()
+
+        value = x + (zpg_value ^ 255) + 1
+
+        self.check_carry(value)
+        self.check_negative(value)
+        self.check_zero(value)
+
+        return "CPX", " zpg", zpg_address
+
+    def cpy_imm(self):
+        """
+        Z,C,N = Y-M
+
+        This instruction compares the contents of the Y register with another memory held value and sets the zero and carry flags as appropriate.
+
+        Processor Status after use:
+
+        C	Carry Flag	Set if Y >= M
+        Z	Zero Flag	Set if Y = M
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of the result is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        mem_value = self.read_memory(mem_address, mem_address + 1).hex()
+        mem_value = int(mem_value, 16)
+        y = self.get_Y()
+
+        value = y + (mem_value ^ 255) + 1
+
+        self.check_carry(value)
+        self.check_negative(value)
+        self.check_zero(value)
+
+        return "CPY", "   #", mem_value
+
+    def cpy_zpg(self):
+        """
+        Z,C,N = Y-M
+
+        This instruction compares the contents of the Y register with another memory held value and sets the zero and carry flags as appropriate.
+
+        Processor Status after use:
+
+        C	Carry Flag	Set if Y >= M
+        Z	Zero Flag	Set if Y = M
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of the result is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
+        zpg_address = int(zpg_address, 16)
+        zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        zpg_value = int(zpg_value, 16)
+
+        y = self.get_Y()
+
+        value = y + (zpg_value ^ 255) + 1
+
+        self.check_carry(value)
+        self.check_negative(value)
+        self.check_zero(value)
+
+        return "CPY", " zpg", zpg_address
+
+    def dec_zpg(self):
+        """
+        M,Z,N = M-1
+
+        Subtracts one from the value held at a specified memory location setting the zero and negative flags as appropriate.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if result is zero
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of the result is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
+        zpg_address = int(zpg_address, 16)
+        zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        zpg_value = int(zpg_value, 16)
+
+        zpg_value -= 1
+        self.check_negative(zpg_value)
+        self.check_zero(zpg_value)
+        self.write_memory(zpg_address, zpg_value)
+
+        return "DEC", " zpg", zpg_address
+
     def dex(self):
         """
         X,Z,N = X-1
@@ -238,6 +683,90 @@ class Instructions(Memory.Memory):
         self.registers[4:5] = y.to_bytes(1, byteorder='big')
         return "DEY", "impl"
 
+    def eor_imm(self):
+        """
+        A,Z,N = A^M
+
+        An exclusive OR is performed, bit by bit, on the accumulator contents using the contents of a byte of memory.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if A = 0
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        mem_value = self.read_memory(mem_address, mem_address + 1).hex()
+        mem_value = int(mem_value, 16)
+        ac = self.get_AC()
+
+        ac = ac ^ mem_value
+        self.write_AC(ac)
+        return "EOR", "   #", mem_value
+
+    def eor_zpg(self):
+        """
+        A,Z,N = A^M
+
+        An exclusive OR is performed, bit by bit, on the accumulator contents using the contents of a byte of memory.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if A = 0
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
+        zpg_address = int(zpg_address, 16)
+        zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        zpg_value = int(zpg_value, 16)
+        ac = self.get_AC()
+
+        ac = ac ^ zpg_value
+        self.write_AC(ac)
+        return "EOR", " zpg", zpg_address
+
+    def inc_zpg(self):
+        """
+        M,Z,N = M+1
+
+        Adds one to the value held at a specified memory location setting the zero and negative flags as appropriate.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if result is zero
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of the result is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
+        zpg_address = int(zpg_address, 16)
+        zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        zpg_value = int(zpg_value, 16)
+
+        zpg_value += 1
+        self.check_negative(zpg_value)
+        self.check_zero(zpg_value)
+        self.write_memory(zpg_address, zpg_value)
+
+        return "INC", " zpg", zpg_address
+
     def inx(self):
         """
         X,Z,N = X+1
@@ -286,6 +815,177 @@ class Instructions(Memory.Memory):
             y = 255
         self.registers[4:5] = y.to_bytes(1, byteorder='big')
         return "INY", "impl"
+
+    def lda_imm(self):
+        """
+        A,Z,N = M
+
+        Loads a byte of memory into the accumulator setting the zero and negative flags as appropriate.
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if A = 0
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of A is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        mem_value = self.read_memory(mem_address, mem_address + 1).hex()
+        mem_value = int(mem_value, 16)
+
+        self.write_AC(mem_value)
+
+        return "LDA", "   #", mem_value
+
+    def lda_zpg(self):
+        """
+        A,Z,N = M
+
+        Loads a byte of memory into the accumulator setting the zero and negative flags as appropriate.
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if A = 0
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of A is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
+        zpg_address = int(zpg_address, 16)
+        zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        zpg_value = int(zpg_value, 16)
+
+        self.write_AC(zpg_value)
+
+        return "LDA", " zpg", zpg_address
+
+    def ldx_imm(self):
+        """
+        X,Z,N = M
+
+        Loads a byte of memory into the X register setting the zero and negative flags as appropriate.
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if X = 0
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of X is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        mem_value = self.read_memory(mem_address, mem_address + 1).hex()
+        mem_value = int(mem_value, 16)
+
+        self.write_X(mem_value)
+
+        return "LDX", "   #", mem_value
+
+    def ldx_zpg(self):
+        """
+        X,Z,N = M
+
+        Loads a byte of memory into the X register setting the zero and negative flags as appropriate.
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if X = 0
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of X is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
+        zpg_address = int(zpg_address, 16)
+        zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        zpg_value = int(zpg_value, 16)
+
+        self.write_X(zpg_value)
+
+        return "LDX", " zpg", zpg_address
+
+    def ldy_imm(self):
+        """
+        Y,Z,N = M
+
+        Loads a byte of memory into the Y register setting the zero and negative flags as appropriate.
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if Y = 0
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of Y is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        mem_value = self.read_memory(mem_address, mem_address + 1).hex()
+        mem_value = int(mem_value, 16)
+
+        self.write_Y(mem_value)
+
+        return "LDY", "   #", mem_value
+
+    def ldy_zpg(self):
+        """
+        Y,Z,N = M
+
+        Loads a byte of memory into the Y register setting the zero and negative flags as appropriate.
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if Y = 0
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of Y is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
+        zpg_address = int(zpg_address, 16)
+        zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        zpg_value = int(zpg_value, 16)
+
+        self.write_Y(zpg_value)
+
+        return "LDY", " zpg", zpg_address
+
+    def ora_imm(self):
+        """
+        A,Z,N = A|M
+
+        An inclusive OR is performed, bit by bit, on the accumulator contents using the contents of a byte of memory.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if A = 0
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        mem_value = self.read_memory(mem_address, mem_address + 1).hex()
+        mem_value = int(mem_value, 16)
+
+        ac = self.get_AC()
+        ac = ac | mem_value
+        self.write_AC(ac)
+
+        return "ORA", "   #", mem_value
 
     def lsr(self):
         """
@@ -498,6 +1198,48 @@ class Instructions(Memory.Memory):
         self.check_zero(ac)
         self.registers[2:3] = ac.to_bytes(1, byteorder='big')
         return "ROR", "A"
+
+    def sbc_imm(self):
+        """
+        A,Z,C,N = A-M-(1-C)
+
+        This instruction subtracts the contents of a memory location to the accumulator together with the not of the carry bit. If overflow occurs the carry bit is clear, this enables multiple byte subtraction to be performed.
+
+        Processor Status after use:
+
+        C	Carry Flag	Clear if overflow in bit 7
+        Z	Zero Flag	Set if A = 0
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Set if sign bit is incorrect
+        N	Negative Flag	Set if bit 7 set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        mem_value = self.read_memory(mem_address, mem_address + 1).hex()
+        mem_value = int(mem_value, 16)
+        mem_sign = self.check_negative(mem_value)
+        ac = self.get_AC()
+        ac_sign = self.check_negative(ac)
+
+        carry = 1 if self.carry_isSet() else 0
+
+        ac = ac - mem_value - (1 - carry)
+
+        new_ac_sign = self.check_negative(ac)
+
+        if ac_sign ^ mem_sign == new_ac_sign:
+            logger.debug("Overflow")
+            self.set_overflow()
+            self.unset_carry()
+            ac -= 256
+        else:
+            self.unset_overflow()
+
+        self.write_AC(ac)
+
+        return "SBC", "   #", mem_value
 
     def sec(self):
         """
