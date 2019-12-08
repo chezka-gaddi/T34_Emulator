@@ -190,6 +190,45 @@ class Memory:
             return True
         else:
             return False
+    
+    def zero_isSet(self):
+        """
+        Checks if zero bit is set.
+
+        Returns:
+            Bool -- status of zero bit
+        """
+        sr = int(self.registers[6:7].hex(), 16)
+        if (sr & (1 << 1)):
+            return True
+        else:
+            return False
+    
+    def negative_isSet(self):
+        """
+        Checks if negative bit is set.
+
+        Returns:
+            Bool -- status of negative bit
+        """
+        sr = int(self.registers[6:7].hex(), 16)
+        if (sr & (1 << 7)):
+            return True
+        else:
+            return False
+    
+    def overflow_isSet(self):
+        """
+        Checks if overflow bit is set.
+
+        Returns:
+            Bool -- status of overflow bit
+        """
+        sr = int(self.registers[6:7].hex(), 16)
+        if (sr & (1 << 6)):
+            return True
+        else:
+            return False
 
     def check_negative_sign(self, sign: int):
         """

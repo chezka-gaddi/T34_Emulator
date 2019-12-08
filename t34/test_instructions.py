@@ -663,8 +663,9 @@ class TestInstructions(unittest.TestCase):
             " 308  A5  LDA    zpg 02 --  11 02 00 FF 00100000\n" +
             " 30A  00  BRK   impl -- --  11 02 00 FC 00110100\n")
 
+    # Test indirect and relative instructions
     def test_jmp_ind(self):
-        """Test immediate and zeropage instructions."""
+        """Test jmp ind instruction."""
         self.emulator.edit_memory("300", "6C 05 03 00")
         self.emulator.edit_memory("30A", "00")
 
@@ -674,3 +675,123 @@ class TestInstructions(unittest.TestCase):
             " 300  6C  JMP    ind 05 03  00 00 00 FF 00100000\n" +
             " 305  00  BRK   impl -- --  00 00 00 FC 00110100\n")
 
+    def test_bcc_rel(self):
+        """Test bcc rel instruction."""
+        self.emulator.edit_memory("300", "90 05 00")
+        self.emulator.edit_memory("305", "00")
+
+        output = self.emulator.run_program("300")
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  90  BCC    rel 05 --  00 00 00 FF 00100000\n" +
+            " 305  00  BRK   impl -- --  00 00 00 FC 00110100\n")
+
+    def test_bcs_rel(self):
+        """Test bcs rel instruction."""
+        self.emulator.set_carry()
+        self.emulator.edit_memory("300", "B0 05 00")
+        self.emulator.edit_memory("305", "00")
+
+        output = self.emulator.run_program("300")
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  B0  BCS    rel 05 --  00 00 00 FF 00100001\n" +
+            " 305  00  BRK   impl -- --  00 00 00 FC 00110101\n")
+    
+    def test_beq_rel(self):
+        """Test beq rel instruction."""
+        self.emulator.set_zero()
+        self.emulator.edit_memory("300", "F0 05 00")
+        self.emulator.edit_memory("305", "00")
+
+        output = self.emulator.run_program("300")
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  F0  BEQ    rel 05 --  00 00 00 FF 00100010\n" +
+            " 305  00  BRK   impl -- --  00 00 00 FC 00110110\n")
+
+    def test_bmi_rel(self):
+        """Test bmi rel instruction."""
+        self.emulator.set_zero()
+        self.emulator.set_negative()
+        self.emulator.edit_memory("300", "30 05 00")
+        self.emulator.edit_memory("305", "00")
+
+        output = self.emulator.run_program("300")
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  30  BMI    rel 05 --  00 00 00 FF 10100010\n" +
+            " 305  00  BRK   impl -- --  00 00 00 FC 10110110\n")
+    
+    def test_bne_rel(self):
+        """Test bne rel instruction."""
+        self.emulator.edit_memory("300", "D0 05 00")
+        self.emulator.edit_memory("305", "00")
+
+        output = self.emulator.run_program("300")
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  D0  BNE    rel 05 --  00 00 00 FF 00100000\n" +
+            " 305  00  BRK   impl -- --  00 00 00 FC 00110100\n")
+    
+    def test_bpl_rel(self):
+        """Test bpl rel instruction."""
+        self.emulator.edit_memory("300", "10 05 00")
+        self.emulator.edit_memory("305", "00")
+
+        output = self.emulator.run_program("300")
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  10  BPL    rel 05 --  00 00 00 FF 00100000\n" +
+            " 305  00  BRK   impl -- --  00 00 00 FC 00110100\n")
+    
+    def test_bvc(self):
+        """Test bvc instruction."""
+        self.emulator.edit_memory("300", "50 05 00")
+        self.emulator.edit_memory("305", "00")
+
+        output = self.emulator.run_program("300")
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  50  BVC    rel 05 --  00 00 00 FF 00100000\n" +
+            " 305  00  BRK   impl -- --  00 00 00 FC 00110100\n")
+    
+    def test_bvs(self):
+        """Test bvs instruction."""
+        self.emulator.set_overflow()
+        self.emulator.edit_memory("300", "70 05 00")
+        self.emulator.edit_memory("305", "00")
+
+        output = self.emulator.run_program("300")
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  70  BVS    rel 05 --  00 00 00 FF 01100000\n" +
+            " 305  00  BRK   impl -- --  00 00 00 FC 01110100\n")
+
+    # Test absolute instructions
+    def test_adc_abs(self):
+        """Test adc abs instruction with overflow and carry. -122+(-94)"""
+        self.emulator.edit_memory("300", "EA 6D 05 03 00")
+        self.emulator.edit_memory("305", "86")
+
+        self.emulator.write_AC(162)
+        output = self.emulator.run_program("300")
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  A2 00 00 FF 10100000\n" +
+            " 301  6D  ADC    abs 05 03  28 00 00 FF 01100001\n" +
+            " 304  00  BRK   impl -- --  28 00 00 FC 01110101\n")
+    
+    def test_and_abs(self):
+        """Test and abs instruction. 5&4"""
+        self.emulator.edit_memory("300", "EA 2D 06 03 00")
+        self.emulator.edit_memory("306", "05")
+
+        self.emulator.write_AC(4)
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  04 00 00 FF 00100000\n" +
+            " 301  2D  AND    abs 06 03  04 00 00 FF 00100000\n" +
+            " 304  00  BRK   impl -- --  04 00 00 FC 00110100\n")

@@ -20,18 +20,22 @@ class Instructions(Memory.Memory):
             "08": self.php,
             "09": self.ora_imm,
             "0A": self.asl,
+            "10": self.bpl_rel,
             "18": self.clc,
             "24": self.bit_zpg,
             "26": self.rol_zpg,
             "28": self.plp,
             "29": self.and_imm,
             "2A": self.rol,
+            "2D": self.and_abs,
+            "30": self.bmi_rel,
             "38": self.sec,
             "45": self.eor_zpg,
             "46": self.lsr_zpg,
             "48": self.pha,
             "49": self.eor_imm,
             "4A": self.lsr,
+            "50": self.bvc,
             "58": self.cli,
             "65": self.adc_zpg,
             "66": self.ror_zpg,
@@ -39,12 +43,15 @@ class Instructions(Memory.Memory):
             "69": self.adc_imm,
             "6A": self.ror,
             "6C": self.jmp_ind,
+            "6D": self.adc_abs,
+            "70": self.bvs,
             "78": self.sei,
             "84": self.sty_zpg,
             "85": self.sta_zpg,
             "86": self.stx_zpg,
             "88": self.dey,
             "8A": self.txa,
+            "90": self.bcc_rel,
             "98": self.tya,
             "9A": self.txs,
             "B8": self.clv,
@@ -56,6 +63,7 @@ class Instructions(Memory.Memory):
             "A8": self.tay,
             "A9": self.lda_imm,
             "AA": self.tax,
+            "B0": self.bcs_rel,
             "BA": self.tsx,
             "C0": self.cpy_imm,
             "C4": self.cpy_zpg,
@@ -64,6 +72,7 @@ class Instructions(Memory.Memory):
             "C8": self.iny,
             "C9": self.cmp_imm,
             "CA": self.dex,
+            "D0": self.bne_rel,
             "D8": self.cld,
             "E0": self.cpx_imm,
             "E4": self.cpx_zpg,
@@ -71,8 +80,57 @@ class Instructions(Memory.Memory):
             "E8": self.inx,
             "E9": self.sbc_imm,
             "EA": self.nop,
+            "F0": self.beq_rel,
             "F8": self.sed
         }
+
+    def adc_abs(self):
+        """
+        This instruction adds the contents of a memory location to the accumulator together with the carry bit. If overflow occurs the carry bit is set, this enables multiple byte addition to be performed.
+
+        Processor Status after use:
+
+        C - Set if overflow in bit 7
+        Z - Set if A = 0
+        I - Not affected
+        D - Not affected
+        B - Not affected
+        V - Set if sign bit is incorrect
+        N - Set if bit 7 set
+        """
+        address = bytearray(2)
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address+1)
+
+        address[0:1] = self.read_memory(mem_address+1, mem_address + 2)
+        address[1:2] = self.read_memory(mem_address, mem_address + 1)
+        mem_address = int(address.hex(), 16)
+
+        mem_value = self.read_memory(mem_address, mem_address + 1).hex()
+        mem_value = int(mem_value, 16)
+        mem_sign = self.check_negative(mem_value)
+        ac = self.get_AC()
+        ac_sign = self.check_negative(ac)
+
+        carry = 1 if self.carry_isSet() else 0
+
+        logger.debug("Adding Immediate: " +
+                     bin(ac) + " " + bin(mem_value) + " " + bin(carry))
+        ac = ac + mem_value + carry
+
+        new_ac_sign = self.check_negative(ac)
+
+        if ac_sign & mem_sign != new_ac_sign:
+            logger.debug("Overflow")
+            self.set_overflow()
+        else:
+            self.unset_overflow()
+
+        if self.check_carry(ac):
+            ac -= 256
+        self.write_AC(ac)
+
+        return "ADC", " abs", int(address[1:2].hex(), 16), int(address[0:1].hex(), 16)
 
     def adc_imm(self):
         """
@@ -162,6 +220,37 @@ class Instructions(Memory.Memory):
 
         return "ADC", " zpg", zpg_address
 
+    def and_abs(self):
+        """
+        A logical AND is performed, bit by bit, on the accumulator contents using the contents of a byte of memory.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if A = 0
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 set
+        """
+        address = bytearray(2)
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address+1)
+
+        address[0:1] = self.read_memory(mem_address+1, mem_address + 2)
+        address[1:2] = self.read_memory(mem_address, mem_address + 1)
+        mem_address = int(address.hex(), 16)
+
+        mem_value = self.read_memory(mem_address, mem_address + 1).hex()
+        mem_value = int(mem_value, 16)
+        ac = self.get_AC()
+
+        ac = ac & mem_value
+
+        self.write_AC(ac)
+        return "AND", " abs", int(address[1:2].hex(), 16), int(address[0:1].hex(), 16)
+    
     def and_imm(self):
         """
         A logical AND is performed, bit by bit, on the accumulator contents using the contents of a byte of memory.
@@ -242,6 +331,43 @@ class Instructions(Memory.Memory):
         self.check_negative(ac)
         self.registers[2:3] = ac.to_bytes(1, byteorder='big')
         return "ASL", "   A"
+    
+    def asl_abs(self):
+        """
+        This operation shifts all the bits of the accumulator or memory contents one bit left. Bit 0 is set to 0 and bit 7 is placed in the carry flag. The effect of this operation is to multiply the memory contents by 2 (ignoring 2's complement considerations), setting the carry if the result will not fit in 8 bits.
+
+        Processor Status after use:
+
+        C - Set to contents of old bit 7
+        Z - Set if A = 0
+        I - Not affected
+        D - Not affected
+        B - Not affected
+        V - Not affected
+        N - Set if bit 7 of the result is set
+        """
+        address = bytearray(2)
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address+1)
+
+        address[0:1] = self.read_memory(mem_address+1, mem_address + 2)
+        address[1:2] = self.read_memory(mem_address, mem_address + 1)
+        mem_address = int(address.hex(), 16)
+
+        mem_value = self.read_memory(mem_address, mem_address + 1).hex()
+        mem_value = int(mem_value, 16)
+        carry = (mem_value & (1 << 7)) >> 7
+
+        if carry == 0:
+            self.clc()
+        else:
+            self.sec()
+        mem_value = mem_value << 1
+        mem_value &= 0xFF
+        self.check_zero(mem_value)
+        self.check_negative(mem_value)
+        self.write_memory(mem_address, mem_value)
+        return "ASL", " abs", int(address[1:2].hex(), 16), int(address[0:1].hex(), 16)
 
     def asl_zpg(self):
         """
@@ -277,6 +403,93 @@ class Instructions(Memory.Memory):
         self.check_negative(zpg_value)
         self.write_memory(zpg_address, zpg_value)
         return "ASL", " zpg", zpg_address
+
+    def bcc_rel(self):
+        """
+        BCC - Branch if Carry Clear
+
+        If the carry flag is clear then add the relative displacement to the program counter to cause a branch to a new location.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Not affected
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Not affected
+        """
+        pc = self.get_PC()
+        mem_address = pc + 1
+        branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
+        branch_displacement = int(branch_displacement, 16)
+
+        if branch_displacement & (1 << 7):
+            branch_displacement -= 1 << 7
+
+        if self.carry_isSet() is False:
+            self.write_PC(pc + branch_displacement - 1)
+
+        return "BCC", " rel", branch_displacement
+    
+    def bcs_rel(self):
+        """
+        BCS - Branch if Carry Set
+
+        If the carry flag is set then add the relative displacement to the program counter to cause a branch to a new location.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Not affected
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Not affected
+        """
+        pc = self.get_PC()
+        mem_address = pc + 1
+        branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
+        branch_displacement = int(branch_displacement, 16)
+
+        if branch_displacement & (1 << 7):
+            branch_displacement -= 1 << 7
+
+        if self.carry_isSet():
+            self.write_PC(pc + branch_displacement - 1)
+
+        return "BCS", " rel", branch_displacement
+    
+    def beq_rel(self):
+        """
+        BEQ - Branch on Result Zero
+
+        If the zero flag is set then add the relative displacement to the program counter to cause a branch to a new location.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Not affected
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Not affected
+        """
+        pc = self.get_PC()
+        mem_address = pc + 1
+        branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
+        branch_displacement = int(branch_displacement, 16)
+
+        if branch_displacement & (1 << 7):
+            branch_displacement -= 1 << 7
+
+        if self.zero_isSet():
+            self.write_PC(pc + branch_displacement - 1)
+
+        return "BEQ", " rel", branch_displacement
 
     def bit_zpg(self):
         """
@@ -317,6 +530,93 @@ class Instructions(Memory.Memory):
 
         return "BIT", " zpg", zpg_address
 
+    def bmi_rel(self):
+        """
+        BMI - Branch if Minus
+
+        If the negative flag is set then add the relative displacement to the program counter to cause a branch to a new location.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Not affected
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Not affected
+        """
+        pc = self.get_PC()
+        mem_address = pc + 1
+        branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
+        branch_displacement = int(branch_displacement, 16)
+
+        if branch_displacement & (1 << 7):
+            branch_displacement -= 1 << 7
+
+        if self.negative_isSet():
+            self.write_PC(pc + branch_displacement - 1)
+
+        return "BMI", " rel", branch_displacement
+    
+    def bne_rel(self):
+        """
+        BNE - Branch if Not Zero
+
+        If the zero flag is not set then add the relative displacement to the program counter to cause a branch to a new location.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Not affected
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Not affected
+        """
+        pc = self.get_PC()
+        mem_address = pc + 1
+        branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
+        branch_displacement = int(branch_displacement, 16)
+
+        if branch_displacement & (1 << 7):
+            branch_displacement -= 1 << 7
+
+        if self.zero_isSet() is False:
+            self.write_PC(pc + branch_displacement - 1)
+
+        return "BNE", " rel", branch_displacement
+    
+    def bpl_rel(self):
+        """
+        BNE - Branch if Plus
+
+        If the negative flag is not set then add the relative displacement to the program counter to cause a branch to a new location.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Not affected
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Not affected
+        """
+        pc = self.get_PC()
+        mem_address = pc + 1
+        branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
+        branch_displacement = int(branch_displacement, 16)
+
+        if branch_displacement & (1 << 7):
+            branch_displacement -= 1 << 7
+
+        if self.negative_isSet() is False:
+            self.write_PC(pc + branch_displacement - 1)
+
+        return "BPL", " rel", branch_displacement
+
     def brk(self):
         """
         The BRK instruction forces the generation of an interrupt request. The program counter and processor status are pushed on the stack then the IRQ interrupt vector at $FFFE/F is loaded into the PC and the break flag in the status set to one.
@@ -350,6 +650,64 @@ class Instructions(Memory.Memory):
         self.registers[6:7] = sr.to_bytes(1, byteorder='big')
         return "BRK", "impl"
 
+    def bvc(self):
+        """
+        BVC - Branch on Overflow Clear
+
+        If the overflow flag is not set then add the relative displacement to the program counter to cause a branch to a new location.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Not affected
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Not affected
+        """
+        pc = self.get_PC()
+        mem_address = pc + 1
+        branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
+        branch_displacement = int(branch_displacement, 16)
+
+        if branch_displacement & (1 << 7):
+            branch_displacement -= 1 << 7
+
+        if self.overflow_isSet() is False:
+            self.write_PC(pc + branch_displacement - 1)
+
+        return "BVC", " rel", branch_displacement
+    
+    def bvs(self):
+        """
+        BVS - Branch if Overflow Set
+
+        If the overflow flag not set then add the relative displacement to the program counter to cause a branch to a new location.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Not affected
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Not affected
+        """
+        pc = self.get_PC()
+        mem_address = pc + 1
+        branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
+        branch_displacement = int(branch_displacement, 16)
+
+        if branch_displacement & (1 << 7):
+            branch_displacement -= 1 << 7
+
+        if self.overflow_isSet():
+            self.write_PC(pc + branch_displacement - 1)
+
+        return "BVS", " rel", branch_displacement
+    
     def clc(self):
         """
         C = 0
