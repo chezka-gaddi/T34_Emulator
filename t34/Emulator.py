@@ -186,8 +186,8 @@ class Emulator(Instructions.Instructions):
         if len(data) == 3:
             oprnd1 = hex(data[2]).lstrip("0x").upper()
         elif len(data) == 4:
-            oprnd1 == data[3]
-        # name, amod = ins()
+            oprnd1 = hex(data[2]).lstrip("0x").upper()
+            oprnd2 = hex(data[3]).lstrip("0x").upper()
 
         output = "%4.1X" % int.from_bytes(addr, byteorder="big") + "  " + op + "  " + name + \
             "   " + "%4s" % amod + " " + oprnd1.zfill(2) + " " + oprnd2.zfill(2) + "  " + \

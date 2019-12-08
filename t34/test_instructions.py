@@ -530,3 +530,147 @@ class TestInstructions(unittest.TestCase):
             " 300  EA  NOP   impl -- --  C2 00 00 FF 10100000\n" +
             " 301  09  ORA      # A9 --  EB 00 00 FF 10100000\n" +
             " 303  00  BRK   impl -- --  EB 00 00 FC 10110100\n")
+
+
+    # Test zeropage instructions
+    def test_lsr_zpg(self):
+        """Test lsr zpg instruction."""
+        self.emulator.edit_memory("300", "EA 46 35 00")
+
+        self.emulator.write_memory("35", 5)
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 00 00 FF 00100000\n" +
+            " 301  46  LSR    zpg 35 --  00 00 00 FF 00100001\n" +
+            " 303  00  BRK   impl -- --  00 00 00 FC 00110101\n")
+
+        output = self.emulator.access_memory("35")
+        self.assertEqual(output, "35\t02")
+
+    def test_ora_zpg(self):
+        """Test ora zpg instruction."""
+        self.emulator.edit_memory("35", "A9")
+        self.emulator.edit_memory("300", "EA 05 35 00")
+
+        self.emulator.write_AC(194)
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  C2 00 00 FF 10100000\n" +
+            " 301  05  ORA    zpg 35 --  EB 00 00 FF 10100000\n" +
+            " 303  00  BRK   impl -- --  EB 00 00 FC 10110100\n")
+    
+    def test_rol_zpg(self):
+        """Test rol zpg instruction."""
+        self.emulator.edit_memory("35", "80")
+        self.emulator.edit_memory("300", "EA 26 35 00")
+
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 00 00 FF 00100000\n" +
+            " 301  26  ROL    zpg 35 --  00 00 00 FF 00100011\n" +
+            " 303  00  BRK   impl -- --  00 00 00 FC 00110111\n")
+        
+        output = self.emulator.access_memory("35")
+
+        self.assertEqual(output, "35\t00")
+    
+    def test_ror_zpg(self):
+        """Test ror zpg instruction."""
+        self.emulator.edit_memory("35", "80")
+        self.emulator.edit_memory("300", "EA 66 35 00")
+
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 00 00 FF 00100000\n" +
+            " 301  66  ROR    zpg 35 --  00 00 00 FF 00100000\n" +
+            " 303  00  BRK   impl -- --  00 00 00 FC 00110100\n")
+
+        output = self.emulator.access_memory("35")
+
+        self.assertEqual(output, "35\t40")
+    
+    def test_sta_zpg(self):
+        """Test sta zpg instruction."""
+        self.emulator.write_AC(5)
+        self.emulator.edit_memory("300", "EA 85 35 00")
+
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  05 00 00 FF 00100000\n" +
+            " 301  85  STA    zpg 35 --  05 00 00 FF 00100000\n" +
+            " 303  00  BRK   impl -- --  05 00 00 FC 00110100\n")
+
+        output = self.emulator.access_memory("35")
+
+        self.assertEqual(output, "35\t05")
+    
+    def test_stx_zpg(self):
+        """Test stx zpg instruction."""
+        self.emulator.write_X(5)
+        self.emulator.edit_memory("300", "EA 86 35 00")
+
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 05 00 FF 00100000\n" +
+            " 301  86  STX    zpg 35 --  00 05 00 FF 00100000\n" +
+            " 303  00  BRK   impl -- --  00 05 00 FC 00110100\n")
+
+        output = self.emulator.access_memory("35")
+
+        self.assertEqual(output, "35\t05")
+    
+    def test_sty_zpg(self):
+        """Test sty zpg instruction."""
+        self.emulator.write_Y(5)
+        self.emulator.edit_memory("300", "EA 84 35 00")
+
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 00 05 FF 00100000\n" +
+            " 301  84  STY    zpg 35 --  00 00 05 FF 00100000\n" +
+            " 303  00  BRK   impl -- --  00 00 05 FC 00110100\n")
+
+        output = self.emulator.access_memory("35")
+
+        self.assertEqual(output, "35\t05")
+
+    def test_immediate_and_zero(self):
+        """Test immediate and zeropage instructions."""
+        self.emulator.edit_memory("300", "69 10 A2 02 85 02 E6 02 A5 02 00")
+
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  69  ADC      # 10 --  10 00 00 FF 00100000\n" +
+            " 302  A2  LDX      # 02 --  10 02 00 FF 00100000\n" +
+            " 304  85  STA    zpg 02 --  10 02 00 FF 00100000\n" +
+            " 306  E6  INC    zpg 02 --  10 02 00 FF 00100000\n" +
+            " 308  A5  LDA    zpg 02 --  11 02 00 FF 00100000\n" +
+            " 30A  00  BRK   impl -- --  11 02 00 FC 00110100\n")
+
+    def test_jmp_ind(self):
+        """Test immediate and zeropage instructions."""
+        self.emulator.edit_memory("300", "6C 05 03 00")
+        self.emulator.edit_memory("30A", "00")
+
+        output = self.emulator.run_program("300")
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  6C  JMP    ind 05 03  00 00 00 FF 00100000\n" +
+            " 305  00  BRK   impl -- --  00 00 00 FC 00110100\n")
+

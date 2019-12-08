@@ -48,8 +48,15 @@ class Memory:
         :param Address address: HEX address of the memory to be edited.
         :param ByteString data: data to store into the memory address.
         """
-        start = int(address, base=16)
-        self.memory[start:start+len(data)] = data
+        try:
+            start = int(address, base=16)
+        except:
+            start = address
+        try:
+            self.memory[start:start+len(data)] = data
+        except:
+            data = data.to_bytes(1, byteorder='big')
+            self.memory[start:start+len(data)] = data
 
     def write_PC(self, value: int):
         """Write to the PC register.
