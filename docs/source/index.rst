@@ -10,7 +10,7 @@ Welcome to T34 Emulator's documentation!
    :maxdepth: 3
    :name: mastertoc
 
-   tutorial
+   tutorial  
    code
    test
 
