@@ -2,9 +2,10 @@
 .. module:: Memory
     :synopsis: Memory class that maintains the T34 memory.
 """
-
+import logging
 from typing import ByteString, TypeVar
 
+logger = logging.getLogger(__name__)
 Address = TypeVar("Address", bound=int)
 
 
@@ -190,7 +191,7 @@ class Memory:
             return True
         else:
             return False
-    
+
     def zero_isSet(self):
         """
         Checks if zero bit is set.
@@ -203,7 +204,7 @@ class Memory:
             return True
         else:
             return False
-    
+
     def negative_isSet(self):
         """
         Checks if negative bit is set.
@@ -216,7 +217,7 @@ class Memory:
             return True
         else:
             return False
-    
+
     def overflow_isSet(self):
         """
         Checks if overflow bit is set.
@@ -249,13 +250,19 @@ class Memory:
         Arguments:
             value {int} -- value to check sign
         """
+        logger.debug("Checking sign for " + str(value))
         sign = (value & (1 << 7)) >> 7
-        if sign == 1:
+        if value < 0:
             self.set_negative()
-            return True
+            value = value + 2**8
+            logger.debug("Changed to " + bin(value))
+            return True, value
+        elif sign == 1:
+            self.set_negative()
+            return True, value
         else:
             self.unset_negative()
-            return False
+            return False, value
 
     def set_negative(self):
         """Set negative bit to 1"""
@@ -298,3 +305,22 @@ class Memory:
         """Unset overflow bit"""
         sr = int(self.registers[6:7].hex(), 16) & ~64
         self.registers[6:7] = sr.to_bytes(1, byteorder='big')
+
+    def make_address(self, mem_address) -> (int, int, int):
+        """Make a full address from the values in memory and return pieces.
+
+        Arguments:
+            int {mem_address} -- location in memory with the address
+
+        Returns:
+            int -- low, high, and address
+        """
+        address = bytearray(2)
+        address[0:1] = self.read_memory(mem_address+1, mem_address + 2)
+        address[1:2] = self.read_memory(mem_address, mem_address + 1)
+
+        low = int(address[1:2].hex(), 16)
+        high = int(address[0:1].hex(), 16)
+        ad = int(address.hex(), 16)
+
+        return low, high, ad

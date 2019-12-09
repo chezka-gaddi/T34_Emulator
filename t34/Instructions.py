@@ -20,9 +20,11 @@ class Instructions(Memory.Memory):
             "08": self.php,
             "09": self.ora_imm,
             "0A": self.asl,
+            "0E": self.asl_abs,
             "10": self.bpl_rel,
             "18": self.clc,
             "24": self.bit_zpg,
+            "25": self.and_zpg,
             "26": self.rol_zpg,
             "28": self.plp,
             "29": self.and_imm,
@@ -72,6 +74,7 @@ class Instructions(Memory.Memory):
             "C8": self.iny,
             "C9": self.cmp_imm,
             "CA": self.dex,
+            "CE": self.dec_abs,
             "D0": self.bne_rel,
             "D8": self.cld,
             "E0": self.cpx_imm,
@@ -108,9 +111,9 @@ class Instructions(Memory.Memory):
 
         mem_value = self.read_memory(mem_address, mem_address + 1).hex()
         mem_value = int(mem_value, 16)
-        mem_sign = self.check_negative(mem_value)
+        mem_sign, mem_value = self.check_negative(mem_value)
         ac = self.get_AC()
-        ac_sign = self.check_negative(ac)
+        ac_sign, ac = self.check_negative(ac)
 
         carry = 1 if self.carry_isSet() else 0
 
@@ -118,7 +121,7 @@ class Instructions(Memory.Memory):
                      bin(ac) + " " + bin(mem_value) + " " + bin(carry))
         ac = ac + mem_value + carry
 
-        new_ac_sign = self.check_negative(ac)
+        new_ac_sign, ac = self.check_negative(ac)
 
         if ac_sign & mem_sign != new_ac_sign:
             logger.debug("Overflow")
@@ -150,9 +153,9 @@ class Instructions(Memory.Memory):
         self.write_PC(mem_address)
         mem_value = self.read_memory(mem_address, mem_address + 1).hex()
         mem_value = int(mem_value, 16)
-        mem_sign = self.check_negative(mem_value)
+        mem_sign, mem_value = self.check_negative(mem_value)
         ac = self.get_AC()
-        ac_sign = self.check_negative(ac)
+        ac_sign, ac = self.check_negative(ac)
 
         carry = 1 if self.carry_isSet() else 0
 
@@ -160,7 +163,7 @@ class Instructions(Memory.Memory):
                      bin(ac) + " " + bin(mem_value) + " " + bin(carry))
         ac = ac + mem_value + carry
 
-        new_ac_sign = self.check_negative(ac)
+        new_ac_sign, ac = self.check_negative(ac)
 
         if ac_sign & mem_sign != new_ac_sign:
             logger.debug("Overflow")
@@ -196,7 +199,7 @@ class Instructions(Memory.Memory):
         zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
         zpg_value = int(zpg_value, 16)
 
-        mem_sign = self.check_negative(zpg_value)
+        mem_sign, zpg_value = self.check_negative(zpg_value)
         ac = self.get_AC()
         ac_sign = self.check_negative(ac)
 
@@ -529,6 +532,50 @@ class Instructions(Memory.Memory):
             self.unset_negative()
 
         return "BIT", " zpg", zpg_address
+    
+    def bit_abs(self):
+        """
+        A & M, N = M7, V = M6
+
+        This instructions is used to test if one or more bits are set in a target memory location. The mask pattern in A is ANDed with the value in memory to set or clear the zero flag, but the result is not kept. Bits 7 and 6 of the value from memory are copied into the N and V flags.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if the result if the AND is zero
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Set to bit 6 of the memory value
+        N	Negative Flag	Set to bit 7 of the memory value
+        """
+        address = bytearray(2)
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address+1)
+
+        address[0:1] = self.read_memory(mem_address+1, mem_address + 2)
+        address[1:2] = self.read_memory(mem_address, mem_address + 1)
+        mem_address = int(address.hex(), 16)
+
+        mem_value = self.read_memory(mem_address, mem_address + 1).hex()
+        mem_value = int(mem_value, 16)
+
+        ac = self.get_AC()
+        value = ac & mem_value
+
+        self.check_zero(value)
+        if value & (1 << 6):
+            self.set_overflow()
+        else:
+            self.unset_overflow()
+
+        if value & (1 << 7):
+            self.set_negative()
+        else:
+            self.unset_negative()
+
+        self.write_memory(mem_address, value)
+        return "BIT", " abs", int(address[1:2].hex(), 16), int(address[0:1].hex(), 16)
 
     def bmi_rel(self):
         """
@@ -802,11 +849,15 @@ class Instructions(Memory.Memory):
         mem_value = int(mem_value, 16)
         ac = self.get_AC()
 
+        # TODO: figure out if I should be comparing signed or unsigned
+        if ac >= mem_value:
+            self.set_carry()
+        elif ac == mem_value:
+            self.set_zero()
+
         value = ac + (mem_value ^ 255) + 1
 
-        self.check_carry(value)
         self.check_negative(value)
-        self.check_zero(value)
 
         return "CMP", "   #", mem_value
 
@@ -968,6 +1019,36 @@ class Instructions(Memory.Memory):
         self.check_zero(value)
 
         return "CPY", " zpg", zpg_address
+
+    def dec_abs(self):
+        """
+        M,Z,N = M-1
+
+        Subtracts one from the value held at a specified memory location setting the zero and negative flags as appropriate.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if result is zero
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of the result is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address+1)
+        
+        low, high, address = self.make_address(mem_address)
+        value = self.read_memory(address, address + 1).hex()
+        value = int(value, 16)
+
+        value -= 1
+        _, value = self.check_negative(value)
+        self.check_zero(value)
+        self.write_memory(address, value)
+
+        return "DEC", " abs", low, high
 
     def dec_zpg(self):
         """

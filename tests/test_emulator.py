@@ -2,7 +2,8 @@
 .. module:: TestEmulator
 """
 import unittest
-from .Emulator import Emulator
+import t34
+from t34.Emulator import Emulator
 
 
 class TestEmulator(unittest.TestCase):

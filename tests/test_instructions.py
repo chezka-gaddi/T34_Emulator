@@ -2,11 +2,14 @@
 .. module:: TestInstructions
 """
 import unittest
-from .Emulator import Emulator
+import t34
+from t34.Emulator import Emulator
 
 
 class TestInstructions(unittest.TestCase):
     """Unit testing class for all instructions in the Instructions class."""
+
+    maxDiff = None
 
     def setUp(self):
         self.emulator = Emulator()
@@ -29,6 +32,7 @@ class TestInstructions(unittest.TestCase):
             " 308  00  BRK   impl -- --  01 02 01 FC 00110100\n")
 
     def set_ac(self):
+        """Sets ac to 4"""
         sp = int(self.emulator.registers[2:3].hex(), 16) | 4
         self.emulator.registers[2:3] = sp.to_bytes(1, byteorder='big')
 
@@ -531,8 +535,22 @@ class TestInstructions(unittest.TestCase):
             " 301  09  ORA      # A9 --  EB 00 00 FF 10100000\n" +
             " 303  00  BRK   impl -- --  EB 00 00 FC 10110100\n")
 
-
     # Test zeropage instructions
+    def test_dec_zpg(self):
+        """Test dec zpg instruction."""
+        self.emulator.edit_memory("300", "EA C6 05 00")
+        self.emulator.edit_memory("05", "05")
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 00 00 FF 00100000\n" +
+            " 301  C6  DEC    zpg 05 --  00 00 00 FF 00100000\n" +
+            " 303  00  BRK   impl -- --  00 00 00 FC 00110100\n")
+
+        output = self.emulator.access_memory("05")
+        self.assertEqual(output, "05\t04")
+
     def test_lsr_zpg(self):
         """Test lsr zpg instruction."""
         self.emulator.edit_memory("300", "EA 46 35 00")
@@ -562,7 +580,7 @@ class TestInstructions(unittest.TestCase):
             " 300  EA  NOP   impl -- --  C2 00 00 FF 10100000\n" +
             " 301  05  ORA    zpg 35 --  EB 00 00 FF 10100000\n" +
             " 303  00  BRK   impl -- --  EB 00 00 FC 10110100\n")
-    
+
     def test_rol_zpg(self):
         """Test rol zpg instruction."""
         self.emulator.edit_memory("35", "80")
@@ -575,11 +593,11 @@ class TestInstructions(unittest.TestCase):
             " 300  EA  NOP   impl -- --  00 00 00 FF 00100000\n" +
             " 301  26  ROL    zpg 35 --  00 00 00 FF 00100011\n" +
             " 303  00  BRK   impl -- --  00 00 00 FC 00110111\n")
-        
+
         output = self.emulator.access_memory("35")
 
         self.assertEqual(output, "35\t00")
-    
+
     def test_ror_zpg(self):
         """Test ror zpg instruction."""
         self.emulator.edit_memory("35", "80")
@@ -596,7 +614,7 @@ class TestInstructions(unittest.TestCase):
         output = self.emulator.access_memory("35")
 
         self.assertEqual(output, "35\t40")
-    
+
     def test_sta_zpg(self):
         """Test sta zpg instruction."""
         self.emulator.write_AC(5)
@@ -613,7 +631,7 @@ class TestInstructions(unittest.TestCase):
         output = self.emulator.access_memory("35")
 
         self.assertEqual(output, "35\t05")
-    
+
     def test_stx_zpg(self):
         """Test stx zpg instruction."""
         self.emulator.write_X(5)
@@ -630,7 +648,7 @@ class TestInstructions(unittest.TestCase):
         output = self.emulator.access_memory("35")
 
         self.assertEqual(output, "35\t05")
-    
+
     def test_sty_zpg(self):
         """Test sty zpg instruction."""
         self.emulator.write_Y(5)
@@ -648,6 +666,7 @@ class TestInstructions(unittest.TestCase):
 
         self.assertEqual(output, "35\t05")
 
+    # Integration test of all immediate and zeropage instructions
     def test_immediate_and_zero(self):
         """Test immediate and zeropage instructions."""
         self.emulator.edit_memory("300", "69 10 A2 02 85 02 E6 02 A5 02 00")
@@ -662,6 +681,39 @@ class TestInstructions(unittest.TestCase):
             " 306  E6  INC    zpg 02 --  10 02 00 FF 00100000\n" +
             " 308  A5  LDA    zpg 02 --  11 02 00 FF 00100000\n" +
             " 30A  00  BRK   impl -- --  11 02 00 FC 00110100\n")
+
+    @unittest.skip("Haven't implemented compare instruction")
+    def test_imm_with_cmp(self):
+        """Test immediate with compare instructions."""
+        self.emulator.edit_memory("300", "A9 AA 49 55 C9 00 69 01 C9 01")
+
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  A9  LDA      # AA --  AA 00 00 FF 10100000\n" +
+            " 302  49  EOR      # 55 --  FF 00 00 FF 10100000\n" +
+            " 304  C9  CMP      # 00 --  FF 00 00 FF 00100001\n" +
+            " 306  69  ADC      # 01 --  01 00 00 FF 00100001\n" +
+            " 308  C9  CMP      # 01 --  01 00 00 FF 00100011\n" +
+            " 30A  00  BRK   impl -- --  01 00 00 FC 00110111\n")
+
+    def test_zeropage(self):
+        """Test zeropage instructions."""
+        self.emulator.edit_memory("000", "01 03 05 07 09 0B 0D 0F")
+        self.emulator.edit_memory("300", "A5 02 25 07 A6 03 86 08 E6 08 46 00")
+
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  A5  LDA    zpg 02 --  05 00 00 FF 00100000\n" +
+            " 302  25  AND    zpg 07 --  05 00 00 FF 00100000\n" +
+            " 304  A6  LDX    zpg 03 --  05 07 00 FF 00100000\n" +
+            " 306  86  STX    zpg 08 --  05 07 00 FF 00100000\n" +
+            " 308  E6  INC    zpg 08 --  05 07 00 FF 00100000\n" +
+            " 30A  46  LSR    zpg 00 --  05 07 00 FF 00100011\n" +
+            " 30C  00  BRK   impl -- --  05 07 00 FC 00110111\n")
 
     # Test indirect and relative instructions
     def test_jmp_ind(self):
@@ -697,7 +749,7 @@ class TestInstructions(unittest.TestCase):
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
             " 300  B0  BCS    rel 05 --  00 00 00 FF 00100001\n" +
             " 305  00  BRK   impl -- --  00 00 00 FC 00110101\n")
-    
+
     def test_beq_rel(self):
         """Test beq rel instruction."""
         self.emulator.set_zero()
@@ -722,7 +774,7 @@ class TestInstructions(unittest.TestCase):
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
             " 300  30  BMI    rel 05 --  00 00 00 FF 10100010\n" +
             " 305  00  BRK   impl -- --  00 00 00 FC 10110110\n")
-    
+
     def test_bne_rel(self):
         """Test bne rel instruction."""
         self.emulator.edit_memory("300", "D0 05 00")
@@ -733,7 +785,7 @@ class TestInstructions(unittest.TestCase):
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
             " 300  D0  BNE    rel 05 --  00 00 00 FF 00100000\n" +
             " 305  00  BRK   impl -- --  00 00 00 FC 00110100\n")
-    
+
     def test_bpl_rel(self):
         """Test bpl rel instruction."""
         self.emulator.edit_memory("300", "10 05 00")
@@ -744,7 +796,7 @@ class TestInstructions(unittest.TestCase):
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
             " 300  10  BPL    rel 05 --  00 00 00 FF 00100000\n" +
             " 305  00  BRK   impl -- --  00 00 00 FC 00110100\n")
-    
+
     def test_bvc(self):
         """Test bvc instruction."""
         self.emulator.edit_memory("300", "50 05 00")
@@ -755,7 +807,7 @@ class TestInstructions(unittest.TestCase):
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
             " 300  50  BVC    rel 05 --  00 00 00 FF 00100000\n" +
             " 305  00  BRK   impl -- --  00 00 00 FC 00110100\n")
-    
+
     def test_bvs(self):
         """Test bvs instruction."""
         self.emulator.set_overflow()
@@ -781,7 +833,10 @@ class TestInstructions(unittest.TestCase):
             " 300  EA  NOP   impl -- --  A2 00 00 FF 10100000\n" +
             " 301  6D  ADC    abs 05 03  28 00 00 FF 01100001\n" +
             " 304  00  BRK   impl -- --  28 00 00 FC 01110101\n")
-    
+
+        output = self.emulator.access_memory("305")
+        self.assertEqual(output, "305\t86")
+
     def test_and_abs(self):
         """Test and abs instruction. 5&4"""
         self.emulator.edit_memory("300", "EA 2D 06 03 00")
@@ -795,3 +850,36 @@ class TestInstructions(unittest.TestCase):
             " 300  EA  NOP   impl -- --  04 00 00 FF 00100000\n" +
             " 301  2D  AND    abs 06 03  04 00 00 FF 00100000\n" +
             " 304  00  BRK   impl -- --  04 00 00 FC 00110100\n")
+
+        output = self.emulator.access_memory("306")
+        self.assertEqual(output, "306\t05")
+
+    def test_asl_abs(self):
+        """Test asl abs instruction."""
+        self.emulator.edit_memory("300", "EA 0E 06 03 00")
+        self.emulator.edit_memory("306", "05")
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 00 00 FF 00100000\n" +
+            " 301  0E  ASL    abs 06 03  00 00 00 FF 00100000\n" +
+            " 304  00  BRK   impl -- --  00 00 00 FC 00110100\n")
+
+        output = self.emulator.access_memory("306")
+        self.assertEqual(output, "306\t0A")
+
+    def test_dec_abs(self):
+        """Test dec abs instruction."""
+        self.emulator.edit_memory("300", "EA CE 06 03 00")
+        self.emulator.edit_memory("306", "00")
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 00 00 FF 00100000\n" +
+            " 301  CE  DEC    abs 06 03  00 00 00 FF 10100000\n" +
+            " 304  00  BRK   impl -- --  00 00 00 FC 10110100\n")
+
+        output = self.emulator.access_memory("306")
+        self.assertEqual(output, "306\tFF")

@@ -2,7 +2,8 @@
 .. module:: TestMemory
 """
 import unittest
-from .Memory import Memory
+import t34
+from t34.Memory import Memory
 
 
 class TestMemory(unittest.TestCase):
@@ -83,7 +84,3 @@ class TestMemory(unittest.TestCase):
         value = 20
         self.memory.registers[6:7] = value.to_bytes(1, byteorder='big')
         self.assertEqual(self.memory.get_SR(), value)
-
-
-if __name__ == '__main__':
-    unittest.main()
