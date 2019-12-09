@@ -1,21 +1,21 @@
 Documentation for the Code
 ==========================
 
-Emulator -- auto members
-************************
+Emulator
+********
 
 .. automodule:: t34.Emulator
     :members:
-    :inherited-members:
 
-Instructions -- auto members
-****************************
+Instructions
+************
 
 .. automodule:: t34.Instructions
     :members:
 
-Memory -- auto members
-**********************
+Memory
+******
 
 .. automodule:: t34.Memory
     :members:
+    :inherited-members:
