@@ -201,7 +201,7 @@ class Instructions(Memory.Memory):
 
         mem_sign, zpg_value = self.check_negative(zpg_value)
         ac = self.get_AC()
-        ac_sign = self.check_negative(ac)
+        ac_sign, ac = self.check_negative(ac)
 
         carry = 1 if self.carry_isSet() else 0
 
@@ -209,7 +209,7 @@ class Instructions(Memory.Memory):
                      bin(ac) + " " + bin(zpg_value) + " " + bin(carry))
         ac = ac + zpg_value + carry
 
-        new_ac_sign = self.check_negative(ac)
+        new_ac_sign, ac = self.check_negative(ac)
 
         if ac_sign & mem_sign != new_ac_sign:
             logger.debug("Overflow")
@@ -331,7 +331,7 @@ class Instructions(Memory.Memory):
         ac = ac << 1
         ac &= 0xFF
         self.check_zero(ac)
-        self.check_negative(ac)
+        _, ac = self.check_negative(ac)
         self.registers[2:3] = ac.to_bytes(1, byteorder='big')
         return "ASL", "   A"
     
@@ -368,7 +368,7 @@ class Instructions(Memory.Memory):
         mem_value = mem_value << 1
         mem_value &= 0xFF
         self.check_zero(mem_value)
-        self.check_negative(mem_value)
+        _, mem_value = self.check_negative(mem_value)
         self.write_memory(mem_address, mem_value)
         return "ASL", " abs", int(address[1:2].hex(), 16), int(address[0:1].hex(), 16)
 
@@ -403,7 +403,7 @@ class Instructions(Memory.Memory):
         zpg_value = zpg_value << 1
         zpg_value &= 0xFF
         self.check_zero(zpg_value)
-        self.check_negative(zpg_value)
+        _, zpg_value = self.check_negative(zpg_value)
         self.write_memory(zpg_address, zpg_value)
         return "ASL", " zpg", zpg_address
 
@@ -857,7 +857,7 @@ class Instructions(Memory.Memory):
 
         value = ac + (mem_value ^ 255) + 1
 
-        self.check_negative(value)
+        _, value = self.check_negative(value)
 
         return "CMP", "   #", mem_value
 
@@ -889,7 +889,7 @@ class Instructions(Memory.Memory):
         value = ac + (zpg_value ^ 255) + 1
 
         self.check_carry(value)
-        self.check_negative(value)
+        _, value = self.check_negative(value)
         self.check_zero(value)
 
         return "CMP", " zpg", zpg_address
@@ -919,7 +919,7 @@ class Instructions(Memory.Memory):
         value = x + (mem_value ^ 255) + 1
 
         self.check_carry(value)
-        self.check_negative(value)
+        _, value = self.check_negative(value)
         self.check_zero(value)
 
         return "CPX", "   #", mem_value
@@ -952,7 +952,7 @@ class Instructions(Memory.Memory):
         value = x + (zpg_value ^ 255) + 1
 
         self.check_carry(value)
-        self.check_negative(value)
+        _, value = self.check_negative(value)
         self.check_zero(value)
 
         return "CPX", " zpg", zpg_address
@@ -982,7 +982,7 @@ class Instructions(Memory.Memory):
         value = y + (mem_value ^ 255) + 1
 
         self.check_carry(value)
-        self.check_negative(value)
+        _, value = self.check_negative(value)
         self.check_zero(value)
 
         return "CPY", "   #", mem_value
@@ -1015,7 +1015,7 @@ class Instructions(Memory.Memory):
         value = y + (zpg_value ^ 255) + 1
 
         self.check_carry(value)
-        self.check_negative(value)
+        _, value = self.check_negative(value)
         self.check_zero(value)
 
         return "CPY", " zpg", zpg_address
@@ -1074,7 +1074,7 @@ class Instructions(Memory.Memory):
         zpg_value = int(zpg_value, 16)
 
         zpg_value -= 1
-        self.check_negative(zpg_value)
+        _, zpg_value = self.check_negative(zpg_value)
         self.check_zero(zpg_value)
         self.write_memory(zpg_address, zpg_value)
 
@@ -1099,9 +1099,7 @@ class Instructions(Memory.Memory):
         x = int(self.registers[3:4].hex().upper(), 16) - 1
         self.check_zero(x)
 
-        self.check_negative(x)
-        if x < 0:
-            x = 255
+        _, x = self.check_negative(x)
         self.registers[3:4] = x.to_bytes(1, byteorder='big')
 
         return "DEX", "impl"
@@ -1123,12 +1121,38 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Set if bit 7 of Y is set
         """
         y = int(self.registers[4:5].hex().upper(), 16) - 1
-        if y < 0:
-            y = 255
-        self.check_negative(y)
+        _, y = self.check_negative(y)
         self.check_zero(y)
         self.registers[4:5] = y.to_bytes(1, byteorder='big')
         return "DEY", "impl"
+    
+    def eor_abs(self):
+        """
+        A,Z,N = A^M
+
+        An exclusive OR is performed, bit by bit, on the accumulator contents using the contents of a byte of memory.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if A = 0
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
+        zpg_address = int(zpg_address, 16)
+        zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        zpg_value = int(zpg_value, 16)
+        ac = self.get_AC()
+
+        ac = ac ^ zpg_value
+        self.write_AC(ac)
+        return "EOR", " zpg", zpg_address
 
     def eor_imm(self):
         """
@@ -1208,7 +1232,7 @@ class Instructions(Memory.Memory):
         zpg_value = int(zpg_value, 16)
 
         zpg_value += 1
-        self.check_negative(zpg_value)
+        _, zpg_value = self.check_negative(zpg_value)
         self.check_zero(zpg_value)
         self.write_memory(zpg_address, zpg_value)
 
@@ -1257,7 +1281,7 @@ class Instructions(Memory.Memory):
         """
         y = int(self.registers[4:5].hex(), 16) + 1
         self.check_zero(y)
-        self.check_negative(y)
+        _, y = self.check_negative(y)
         if y < 0:
             y = 255
         self.registers[4:5] = y.to_bytes(1, byteorder='big')
@@ -1695,7 +1719,7 @@ class Instructions(Memory.Memory):
         else:
             self.sec()
         
-        self.check_negative(ac)
+        _, ac = self.check_negative(ac)
         self.check_zero(ac)
         self.registers[2:3] = ac.to_bytes(1, byteorder='big')
 
@@ -1737,7 +1761,7 @@ class Instructions(Memory.Memory):
             self.sec()
 
         print(zpg_value)
-        self.check_negative(zpg_value)
+        _ , zpg_value = self.check_negative(zpg_value)
         self.check_zero(zpg_value)
         
         self.write_memory(zpg_address, zpg_value)
@@ -1774,9 +1798,7 @@ class Instructions(Memory.Memory):
         else:
             self.sec()
 
-        if ac > 255:
-            ac = 1
-        self.check_negative(ac)
+        _, ac = self.check_negative(ac)
         self.check_zero(ac)
         self.registers[2:3] = ac.to_bytes(1, byteorder='big')
         return "ROR", "A"
@@ -1817,7 +1839,7 @@ class Instructions(Memory.Memory):
         else:
             self.set_carry()
 
-        self.check_negative(zpg_value)
+        _, zpg_value = self.check_negative(zpg_value)
         self.check_zero(zpg_value)
         self.write_memory(zpg_address, zpg_value)
         
@@ -1843,15 +1865,15 @@ class Instructions(Memory.Memory):
         self.write_PC(mem_address)
         mem_value = self.read_memory(mem_address, mem_address + 1).hex()
         mem_value = int(mem_value, 16)
-        mem_sign = self.check_negative(mem_value)
+        mem_sign, mem_value = self.check_negative(mem_value)
         ac = self.get_AC()
-        ac_sign = self.check_negative(ac)
+        ac_sign, ac = self.check_negative(ac)
 
         carry = 1 if self.carry_isSet() else 0
 
         ac = ac - mem_value - (1 - carry)
 
-        new_ac_sign = self.check_negative(ac)
+        new_ac_sign, ac = self.check_negative(ac)
 
         if ac_sign ^ mem_sign == new_ac_sign:
             logger.debug("Overflow")
