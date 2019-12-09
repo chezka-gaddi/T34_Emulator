@@ -536,6 +536,20 @@ class TestInstructions(unittest.TestCase):
             " 303  00  BRK   impl -- --  EB 00 00 FC 10110100\n")
 
     # Test zeropage instructions
+    def test_eor_zpg(self):
+        """Test eor zpg instruction. 5^4"""
+        self.emulator.edit_memory("300", "EA 45 05 00")
+        self.emulator.edit_memory("05", "05")
+
+        self.emulator.write_AC(4)
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  04 00 00 FF 00100000\n" +
+            " 301  45  EOR    zpg 05 --  01 00 00 FF 00100000\n" +
+            " 303  00  BRK   impl -- --  01 00 00 FC 00110100\n")
+
     def test_dec_zpg(self):
         """Test dec zpg instruction."""
         self.emulator.edit_memory("300", "EA C6 05 00")
@@ -883,3 +897,32 @@ class TestInstructions(unittest.TestCase):
 
         output = self.emulator.access_memory("306")
         self.assertEqual(output, "306\tFF")
+
+    def test_eor_abs(self):
+        """Test eor abs instruction. 5^4"""
+        self.emulator.edit_memory("300", "EA 4D 06 03 00")
+        self.emulator.edit_memory("306", "05")
+
+        self.emulator.write_AC(4)
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  04 00 00 FF 00100000\n" +
+            " 301  4D  EOR    abs 06 03  01 00 00 FF 00100000\n" +
+            " 304  00  BRK   impl -- --  01 00 00 FC 00110100\n")
+
+    def test_inc_abs(self):
+        """Test inc abs instruction."""
+        self.emulator.edit_memory("300", "EA EE 06 03 00")
+        self.emulator.edit_memory("306", "FF")
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  00 00 00 FF 00100000\n" +
+            " 301  EE  INC    abs 06 03  00 00 00 FF 00100010\n" +
+            " 304  00  BRK   impl -- --  00 00 00 FC 00110110\n")
+
+        output = self.emulator.access_memory("306")
+        self.assertEqual(output, "306\t00")

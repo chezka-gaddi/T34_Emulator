@@ -37,6 +37,7 @@ class Instructions(Memory.Memory):
             "48": self.pha,
             "49": self.eor_imm,
             "4A": self.lsr,
+            "4D": self.eor_abs,
             "50": self.bvc,
             "58": self.cli,
             "65": self.adc_zpg,
@@ -83,6 +84,7 @@ class Instructions(Memory.Memory):
             "E8": self.inx,
             "E9": self.sbc_imm,
             "EA": self.nop,
+            "EE": self.inc_abs,
             "F0": self.beq_rel,
             "F8": self.sed
         }
@@ -330,8 +332,8 @@ class Instructions(Memory.Memory):
             self.sec()
         ac = ac << 1
         ac &= 0xFF
-        self.check_zero(ac)
         _, ac = self.check_negative(ac)
+        self.check_zero(ac)
         self.registers[2:3] = ac.to_bytes(1, byteorder='big')
         return "ASL", "   A"
     
@@ -367,8 +369,8 @@ class Instructions(Memory.Memory):
             self.sec()
         mem_value = mem_value << 1
         mem_value &= 0xFF
-        self.check_zero(mem_value)
         _, mem_value = self.check_negative(mem_value)
+        self.check_zero(mem_value)
         self.write_memory(mem_address, mem_value)
         return "ASL", " abs", int(address[1:2].hex(), 16), int(address[0:1].hex(), 16)
 
@@ -402,8 +404,8 @@ class Instructions(Memory.Memory):
 
         zpg_value = zpg_value << 1
         zpg_value &= 0xFF
-        self.check_zero(zpg_value)
         _, zpg_value = self.check_negative(zpg_value)
+        self.check_zero(zpg_value)
         self.write_memory(zpg_address, zpg_value)
         return "ASL", " zpg", zpg_address
 
@@ -519,7 +521,6 @@ class Instructions(Memory.Memory):
 
         ac = self.get_AC()
         value = ac & zpg_value
-        self.check_zero(value)
 
         if value & (1 << 6):
             self.set_overflow()
@@ -530,6 +531,7 @@ class Instructions(Memory.Memory):
             self.set_negative()
         else:
             self.unset_negative()
+        self.check_zero(value)
 
         return "BIT", " zpg", zpg_address
     
@@ -563,7 +565,6 @@ class Instructions(Memory.Memory):
         ac = self.get_AC()
         value = ac & mem_value
 
-        self.check_zero(value)
         if value & (1 << 6):
             self.set_overflow()
         else:
@@ -573,6 +574,7 @@ class Instructions(Memory.Memory):
             self.set_negative()
         else:
             self.unset_negative()
+        self.check_zero(value)
 
         self.write_memory(mem_address, value)
         return "BIT", " abs", int(address[1:2].hex(), 16), int(address[0:1].hex(), 16)
@@ -1097,9 +1099,9 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Set if bit 7 of X is set
         """
         x = int(self.registers[3:4].hex().upper(), 16) - 1
-        self.check_zero(x)
 
         _, x = self.check_negative(x)
+        self.check_zero(x)
         self.registers[3:4] = x.to_bytes(1, byteorder='big')
 
         return "DEX", "impl"
@@ -1143,16 +1145,16 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Set if bit 7 set
         """
         mem_address = self.get_PC() + 1
-        self.write_PC(mem_address)
-        zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
-        zpg_address = int(zpg_address, 16)
-        zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
-        zpg_value = int(zpg_value, 16)
+        self.write_PC(mem_address+1)
+        
+        low, high, address = self.make_address(mem_address)
+        value = self.read_memory(address, address + 1).hex()
+        value = int(value, 16)
         ac = self.get_AC()
 
-        ac = ac ^ zpg_value
+        ac = ac ^ value
         self.write_AC(ac)
-        return "EOR", " zpg", zpg_address
+        return "EOR", " abs", low, high
 
     def eor_imm(self):
         """
@@ -1208,6 +1210,36 @@ class Instructions(Memory.Memory):
         self.write_AC(ac)
         return "EOR", " zpg", zpg_address
 
+    def inc_abs(self):
+        """
+        M,Z,N = M+1
+
+        Adds one from the value held at a specified memory location setting the zero and negative flags as appropriate.
+
+        Processor Status after use:
+
+        C	Carry Flag	Not affected
+        Z	Zero Flag	Set if result is zero
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of the result is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address+1)
+        
+        low, high, address = self.make_address(mem_address)
+        value = self.read_memory(address, address + 1).hex()
+        value = int(value, 16)
+
+        value += 1
+        _, value = self.check_negative(value)
+        self.check_zero(value)
+        self.write_memory(address, value)
+
+        return "INC", " abs", low, high
+
     def inc_zpg(self):
         """
         M,Z,N = M+1
@@ -1256,8 +1288,8 @@ class Instructions(Memory.Memory):
         """
         x = int(self.registers[3:4].hex(), 16) + 1
         sign = (x & (1 << 7)) >> 7
-        self.check_zero(x)
         self.check_negative_sign(sign)
+        self.check_zero(x)
         if sign == 1:
             x = 255
         self.registers[3:4] = x.to_bytes(1, byteorder='big')
@@ -1280,8 +1312,8 @@ class Instructions(Memory.Memory):
         N	Negative Flag	Set if bit 7 of Y is set
         """
         y = int(self.registers[4:5].hex(), 16) + 1
-        self.check_zero(y)
         _, y = self.check_negative(y)
+        self.check_zero(y)
         if y < 0:
             y = 255
         self.registers[4:5] = y.to_bytes(1, byteorder='big')
@@ -2051,8 +2083,8 @@ class Instructions(Memory.Memory):
         self.registers[3:4] = self.registers[2:3]
         ac = int(self.registers[2:3].hex(), 16)
         sign = (ac & (1 << 7)) >> 7
-        self.check_zero(ac)
         self.check_negative_sign(sign)
+        self.check_zero(ac)
         return "TAX", "impl"
 
     def tay(self):
@@ -2075,8 +2107,8 @@ class Instructions(Memory.Memory):
         self.registers[4:5] = self.registers[2:3]
         ac = int(self.registers[2:3].hex(), 16)
         sign = (ac & (1 << 7)) >> 7
-        self.check_zero(ac)
         self.check_negative_sign(sign)
+        self.check_zero(ac)
         return "TAY", "impl"
 
     def tsx(self):
@@ -2099,8 +2131,8 @@ class Instructions(Memory.Memory):
         self.registers[3:4] = self.registers[5:6]
         sp = int(self.registers[5:6].hex(), 16)
         sign = (sp & (1 << 7)) >> 7
-        self.check_zero(sp)
         self.check_negative_sign(sign)
+        self.check_zero(sp)
         return "TSX", "impl"
 
     def txa(self):
@@ -2123,8 +2155,8 @@ class Instructions(Memory.Memory):
         self.registers[2:3] = self.registers[3:4]
         x = int(self.registers[3:4].hex(), 16)
         sign = (x & (1 << 7)) >> 7
-        self.check_zero(x)
         self.check_negative_sign(sign)
+        self.check_zero(x)
         return "TXA", "impl"
 
     def txs(self):
@@ -2167,6 +2199,6 @@ class Instructions(Memory.Memory):
         self.registers[2:3] = self.registers[4:5]
         y = int(self.registers[4:5].hex(), 16)
         sign = (y & (1 << 7)) >> 7
-        self.check_zero(y)
         self.check_negative_sign(sign)
+        self.check_zero(y)
         return "TYA", "impl"

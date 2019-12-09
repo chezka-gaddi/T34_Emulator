@@ -251,6 +251,8 @@ class Memory:
             value {int} -- value to check sign
         """
         logger.debug("Checking sign for " + str(value))
+        if value == 256:
+            value = 0
         sign = (value & (1 << 7)) >> 7
         if value < 0:
             self.set_negative()
