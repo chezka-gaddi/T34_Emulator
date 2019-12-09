@@ -10,6 +10,8 @@ Address = TypeVar("Address", bound=int)
 
 
 class Memory:
+    """Memory class that maintains the T34 registers and memory."""
+
     def __init__(self):
         """Initialize all of the Emulator's memory."""
         self.memory = bytearray(65536)
@@ -326,3 +328,30 @@ class Memory:
         ad = int(address.hex(), 16)
 
         return low, high, ad
+
+    def push_to_stack(self, data: int, size: int):
+        """Push data onto the stack.
+
+        Arguments:
+            data {int} -- data to be stored into the stack
+            size {int} -- size of data
+        """
+        sp = self.get_SP() + 256
+        data = data.to_bytes(size, byteorder='little')
+        self.memory[sp:sp+size] = data[:]
+        sp -= size
+        sp -= 256
+        self.write_SP(sp)
+
+    def pop_from_stack(self, size: int) -> ByteString:
+        """Pop data from stack.
+
+        Arguments:
+            size {int} -- size of data
+        """
+        sp = self.get_SP() + 256 + size
+        data = self.read_memory(sp, sp+size)
+        sp -= 256
+        self.write_SP(sp)
+        logger.debug(data)
+        return data

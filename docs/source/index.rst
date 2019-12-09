@@ -7,7 +7,7 @@ Welcome to T34 Emulator's documentation!
 ========================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :name: mastertoc
 
    tutorial

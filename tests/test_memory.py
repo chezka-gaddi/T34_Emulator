@@ -7,7 +7,7 @@ from t34.Memory import Memory
 
 
 class TestMemory(unittest.TestCase):
-    """Unit testing class for all the functionality of the Emulator class."""
+    """Unit testing class for the functionality of the Memory class."""
 
     def setUp(self):
         """Setup the Emulator object to be used for all the tests."""

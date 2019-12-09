@@ -7,7 +7,8 @@ import argparse
 import sys
 import logging
 from t34 import Emulator
-from t34 import test_emulator
+from t34 import Memory
+from t34 import Instructions
 
 
 def parse_args():

@@ -5,7 +5,7 @@ All of the functionality of the :class:`Emulator` class is tested with the unitt
 
 .. code-block:: console
 
-    python3 -m unittest discover
+    nosetests --verbosity=2 --rednose ./
 
 Test Emulator
 *************
@@ -23,4 +23,28 @@ Test Instructions
 *****************
 
 .. automodule:: tests.test_instructions
+    :members:
+
+Immediate Instructions
+----------------------
+
+.. automodule:: tests.test_instructions_immediate
+    :members:
+
+Zeropage Instructions
+---------------------
+
+.. automodule:: tests.test_instructions_zeropage
+    :members:
+
+Relative Instructions
+---------------------
+
+.. automodule:: tests.test_instructions_relative
+    :members:
+
+Absolute Instructions
+---------------------
+
+.. automodule:: tests.test_instructions_absolute
     :members:
