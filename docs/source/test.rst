@@ -1,7 +1,7 @@
 Testing the Program
 ===================
 
-All of the functionality of the :class:`Emulator` class is tested with the unittest found in the TestEmulator and TestInstruction modules. All tests could be run with the command
+All of the functionality of the :class:`Emulator` class is tested with the unittest found in the TestEmulator and TestInstruction and TestMemory modules. All tests could be run with the command
 
 .. code-block:: console
 
@@ -10,11 +10,17 @@ All of the functionality of the :class:`Emulator` class is tested with the unitt
 Test Emulator
 *************
 
-.. automodule:: t34.test_emulator
+.. automodule:: tests.test_emulator
+    :members:
+
+Test Memory
+***********
+
+.. automodule:: tests.test_memory
     :members:
 
 Test Instructions
 *****************
 
-.. automodule:: t34.test_instructions
+.. automodule:: tests.test_instructions
     :members:
