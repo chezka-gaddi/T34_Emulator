@@ -875,11 +875,6 @@ class Instructions(Memory.Memory):
         if ac == mem_value:
             self.set_zero()
 
-
-        # mem_value = ac + (mem_value ^ 255) + 1
-        # if mem_value > 255:
-            # mem_value = mem_value + 2**8
-
         return "CMP", "   #", mem_value
 
     def cmp_zpg(self):
@@ -903,15 +898,21 @@ class Instructions(Memory.Memory):
         zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
         zpg_address = int(zpg_address, 16)
         zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        
         zpg_value = int(zpg_value, 16)
-
         ac = self.get_AC()
 
-        value = ac + (zpg_value ^ 255) + 1
-
-        self.check_carry(value)
-        _, value = self.check_negative(value)
-        self.check_zero(value)
+        logger.debug("Comparing " + str(ac) + " and " + str(zpg_value))
+        if ac >= zpg_value:
+            logger.debug("Setting the carry flag")
+            self.set_carry()
+            self.unset_negative()
+        else:
+            sign, zpg_value = self.check_negative(zpg_value)
+            if sign:
+                self.unset_carry()
+        if ac == zpg_value:
+            self.set_zero()
 
         return "CMP", " zpg", zpg_address
 
@@ -937,11 +938,17 @@ class Instructions(Memory.Memory):
         mem_value = int(mem_value, 16)
         x = self.get_X()
 
-        value = x + (mem_value ^ 255) + 1
-
-        self.check_carry(value)
-        _, value = self.check_negative(value)
-        self.check_zero(value)
+        logger.debug("Comparing " + str(x) + " and " + str(mem_value))
+        if x >= mem_value:
+            logger.debug("Setting the carry flag")
+            self.set_carry()
+            self.unset_negative()
+        else:
+            sign, mem_value = self.check_negative(mem_value)
+            if sign:
+                self.unset_carry()
+        if x == mem_value:
+            self.set_zero()
 
         return "CPX", "   #", mem_value
 
@@ -966,15 +973,21 @@ class Instructions(Memory.Memory):
         zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
         zpg_address = int(zpg_address, 16)
         zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        
         zpg_value = int(zpg_value, 16)
-
         x = self.get_X()
 
-        value = x + (zpg_value ^ 255) + 1
-
-        self.check_carry(value)
-        _, value = self.check_negative(value)
-        self.check_zero(value)
+        logger.debug("Comparing " + str(x) + " and " + str(zpg_value))
+        if x >= zpg_value:
+            logger.debug("Setting the carry flag")
+            self.set_carry()
+            self.unset_negative()
+        else:
+            sign, zpg_value = self.check_negative(zpg_value)
+            if sign:
+                self.unset_carry()
+        if x == zpg_value:
+            self.set_zero()
 
         return "CPX", " zpg", zpg_address
 
@@ -1000,11 +1013,17 @@ class Instructions(Memory.Memory):
         mem_value = int(mem_value, 16)
         y = self.get_Y()
 
-        value = y + (mem_value ^ 255) + 1
-
-        self.check_carry(value)
-        _, value = self.check_negative(value)
-        self.check_zero(value)
+        logger.debug("Comparing " + str(y) + " and " + str(mem_value))
+        if y >= mem_value:
+            logger.debug("Setting the carry flag")
+            self.set_carry()
+            self.unset_negative()
+        else:
+            sign, mem_value = self.check_negative(mem_value)
+            if sign:
+                self.unset_carry()
+        if y == mem_value:
+            self.set_zero()
 
         return "CPY", "   #", mem_value
 
@@ -1029,15 +1048,21 @@ class Instructions(Memory.Memory):
         zpg_address = self.read_memory(mem_address, mem_address + 1).hex()
         zpg_address = int(zpg_address, 16)
         zpg_value = self.read_memory(zpg_address, zpg_address + 1).hex()
+        
         zpg_value = int(zpg_value, 16)
-
         y = self.get_Y()
 
-        value = y + (zpg_value ^ 255) + 1
-
-        self.check_carry(value)
-        _, value = self.check_negative(value)
-        self.check_zero(value)
+        logger.debug("Comparing " + str(y) + " and " + str(zpg_value))
+        if y >= zpg_value:
+            logger.debug("Setting the carry flag")
+            self.set_carry()
+            self.unset_negative()
+        else:
+            sign, zpg_value = self.check_negative(zpg_value)
+            if sign:
+                self.unset_carry()
+        if y == zpg_value:
+            self.set_zero()
 
         return "CPY", " zpg", zpg_address
 
