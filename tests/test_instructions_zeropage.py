@@ -227,7 +227,6 @@ class TestInstructionsZeropage(unittest.TestCase):
             " 308  A5  LDA    zpg 02 --  11 02 00 FF 00100000\n" +
             " 30A  00  BRK   impl -- --  11 02 00 FC 00110100\n")
 
-    @unittest.skip("Haven't implemented compare instruction")
     def test_imm_with_cmp(self):
         """Test immediate with compare instructions."""
         self.emulator.edit_memory("300", "A9 AA 49 55 C9 00 69 01 C9 01")

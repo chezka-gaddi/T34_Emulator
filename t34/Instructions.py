@@ -863,15 +863,22 @@ class Instructions(Memory.Memory):
         mem_value = int(mem_value, 16)
         ac = self.get_AC()
 
-        # TODO: figure out if I should be comparing signed or unsigned
+        logger.debug("Comparing " + str(ac) + " and " + str(mem_value))
         if ac >= mem_value:
+            logger.debug("Setting the carry flag")
             self.set_carry()
-        elif ac == mem_value:
+            self.unset_negative()
+        else:
+            sign, mem_value = self.check_negative(mem_value)
+            if sign:
+                self.unset_carry()
+        if ac == mem_value:
             self.set_zero()
 
-        value = ac + (mem_value ^ 255) + 1
 
-        _, value = self.check_negative(value)
+        # mem_value = ac + (mem_value ^ 255) + 1
+        # if mem_value > 255:
+            # mem_value = mem_value + 2**8
 
         return "CMP", "   #", mem_value
 
