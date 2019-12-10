@@ -14,7 +14,7 @@ class TestInstructionsIntegration(unittest.TestCase):
     def setUp(self):
         self.emulator = Emulator()
 
-    @unittest.skip("Question about BNE")
+    # @unittest.skip("Question about BNE")
     def test_indirect_relative_absolute(self):
         """Testing indirect, relative, and absolute instructions."""
         self.emulator.edit_memory(

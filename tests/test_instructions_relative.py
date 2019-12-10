@@ -34,7 +34,7 @@ class TestInstructionsRelative(unittest.TestCase):
         self.assertEqual(
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
             " 300  90  BCC    rel 05 --  00 00 00 FF 00100000\n" +
-            " 305  00  BRK   impl -- --  00 00 00 FC 00110100\n")
+            " 307  00  BRK   impl -- --  00 00 00 FC 00110100\n")
 
     def test_bcs_rel(self):
         """Test bcs rel instruction."""
@@ -46,7 +46,7 @@ class TestInstructionsRelative(unittest.TestCase):
         self.assertEqual(
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
             " 300  B0  BCS    rel 05 --  00 00 00 FF 00100001\n" +
-            " 305  00  BRK   impl -- --  00 00 00 FC 00110101\n")
+            " 307  00  BRK   impl -- --  00 00 00 FC 00110101\n")
 
     def test_beq_rel(self):
         """Test beq rel instruction."""
@@ -58,7 +58,7 @@ class TestInstructionsRelative(unittest.TestCase):
         self.assertEqual(
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
             " 300  F0  BEQ    rel 05 --  00 00 00 FF 00100010\n" +
-            " 305  00  BRK   impl -- --  00 00 00 FC 00110110\n")
+            " 307  00  BRK   impl -- --  00 00 00 FC 00110110\n")
 
     def test_bmi_rel(self):
         """Test bmi rel instruction."""
@@ -71,17 +71,17 @@ class TestInstructionsRelative(unittest.TestCase):
         self.assertEqual(
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
             " 300  30  BMI    rel 05 --  00 00 00 FF 10100010\n" +
-            " 305  00  BRK   impl -- --  00 00 00 FC 10110110\n")
+            " 307  00  BRK   impl -- --  00 00 00 FC 10110110\n")
 
     def test_bne_rel(self):
         """Test bne rel instruction."""
-        self.emulator.edit_memory("300", "D0 05 00")
-        self.emulator.edit_memory("305", "00")
+        self.emulator.edit_memory("300", "D0 03 00")
+        self.emulator.edit_memory("306", "00")
 
         output = self.emulator.run_program("300")
         self.assertEqual(
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
-            " 300  D0  BNE    rel 05 --  00 00 00 FF 00100000\n" +
+            " 300  D0  BNE    rel 03 --  00 00 00 FF 00100000\n" +
             " 305  00  BRK   impl -- --  00 00 00 FC 00110100\n")
 
     def test_bpl_rel(self):
@@ -93,7 +93,7 @@ class TestInstructionsRelative(unittest.TestCase):
         self.assertEqual(
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
             " 300  10  BPL    rel 05 --  00 00 00 FF 00100000\n" +
-            " 305  00  BRK   impl -- --  00 00 00 FC 00110100\n")
+            " 307  00  BRK   impl -- --  00 00 00 FC 00110100\n")
 
     def test_bvc(self):
         """Test bvc instruction."""
@@ -104,7 +104,7 @@ class TestInstructionsRelative(unittest.TestCase):
         self.assertEqual(
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
             " 300  50  BVC    rel 05 --  00 00 00 FF 00100000\n" +
-            " 305  00  BRK   impl -- --  00 00 00 FC 00110100\n")
+            " 307  00  BRK   impl -- --  00 00 00 FC 00110100\n")
 
     def test_bvs(self):
         """Test bvs instruction."""
@@ -116,4 +116,4 @@ class TestInstructionsRelative(unittest.TestCase):
         self.assertEqual(
             output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
             " 300  70  BVS    rel 05 --  00 00 00 FF 01100000\n" +
-            " 305  00  BRK   impl -- --  00 00 00 FC 01110100\n")
+            " 307  00  BRK   impl -- --  00 00 00 FC 01110100\n")

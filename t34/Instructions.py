@@ -449,11 +449,10 @@ class Instructions(Memory.Memory):
         branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
         branch_displacement = int(branch_displacement, 16)
 
-        if branch_displacement & (1 << 7):
-            branch_displacement -= 1 << 7
+        offset = self.twos_complement(branch_displacement)
 
         if self.carry_isSet() is False:
-            self.write_PC(pc + branch_displacement - 1)
+            self.write_PC(mem_address + offset)
 
         return "BCC", " rel", branch_displacement
     
@@ -478,11 +477,10 @@ class Instructions(Memory.Memory):
         branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
         branch_displacement = int(branch_displacement, 16)
 
-        if branch_displacement & (1 << 7):
-            branch_displacement -= 1 << 7
+        offset = self.twos_complement(branch_displacement)
 
         if self.carry_isSet():
-            self.write_PC(pc + branch_displacement - 1)
+            self.write_PC(mem_address + offset)
 
         return "BCS", " rel", branch_displacement
     
@@ -507,11 +505,10 @@ class Instructions(Memory.Memory):
         branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
         branch_displacement = int(branch_displacement, 16)
 
-        if branch_displacement & (1 << 7):
-            branch_displacement -= 1 << 7
+        offset = self.twos_complement(branch_displacement)
 
         if self.zero_isSet():
-            self.write_PC(pc + branch_displacement - 1)
+            self.write_PC(mem_address + offset)
 
         return "BEQ", " rel", branch_displacement
 
@@ -615,11 +612,10 @@ class Instructions(Memory.Memory):
         branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
         branch_displacement = int(branch_displacement, 16)
 
-        if branch_displacement & (1 << 7):
-            branch_displacement -= 1 << 7
+        offset = self.twos_complement(branch_displacement)
 
         if self.negative_isSet():
-            self.write_PC(pc + branch_displacement - 1)
+            self.write_PC(mem_address + offset)
 
         return "BMI", " rel", branch_displacement
     
@@ -644,10 +640,10 @@ class Instructions(Memory.Memory):
         branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
         branch_displacement = int(branch_displacement, 16)
 
-        branch_displacement = self.twos_complement(branch_displacement)
+        offset = self.twos_complement(branch_displacement)
 
         if self.zero_isSet() is False:
-            self.write_PC(pc + branch_displacement - 1)
+            self.write_PC(mem_address + offset)
 
         return "BNE", " rel", branch_displacement
     
@@ -671,12 +667,11 @@ class Instructions(Memory.Memory):
         mem_address = pc + 1
         branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
         branch_displacement = int(branch_displacement, 16)
-
-        if branch_displacement & (1 << 7):
-            branch_displacement -= 1 << 7
+        
+        offset = self.twos_complement(branch_displacement)
 
         if self.negative_isSet() is False:
-            self.write_PC(pc + branch_displacement - 1)
+            self.write_PC(mem_address + offset)
 
         return "BPL", " rel", branch_displacement
 
@@ -734,11 +729,10 @@ class Instructions(Memory.Memory):
         branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
         branch_displacement = int(branch_displacement, 16)
 
-        if branch_displacement & (1 << 7):
-            branch_displacement -= 1 << 7
+        offset = self.twos_complement(branch_displacement)
 
         if self.overflow_isSet() is False:
-            self.write_PC(pc + branch_displacement - 1)
+            self.write_PC(mem_address + offset)
 
         return "BVC", " rel", branch_displacement
     
@@ -762,12 +756,11 @@ class Instructions(Memory.Memory):
         mem_address = pc + 1
         branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
         branch_displacement = int(branch_displacement, 16)
-
-        if branch_displacement & (1 << 7):
-            branch_displacement -= 1 << 7
+        
+        offset = self.twos_complement(branch_displacement)
 
         if self.overflow_isSet():
-            self.write_PC(pc + branch_displacement - 1)
+            self.write_PC(mem_address + offset)
 
         return "BVS", " rel", branch_displacement
     
