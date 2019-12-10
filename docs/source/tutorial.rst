@@ -3,6 +3,12 @@ T34 Emulator Tutorial
 
 This is the tutorial on how to use the T34 Emulator module.
 
+Overview
+********
+
+The T34 Emulator has been implemented up to the absolute addressing modes.
+
+
 Running the Application
 ***********************
 
