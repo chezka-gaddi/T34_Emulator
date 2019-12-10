@@ -80,18 +80,18 @@ class TestInstructionsImmediate(unittest.TestCase):
             " 301  29  AND      # 05 --  04 00 00 FF 00100000\n" +
             " 303  00  BRK   impl -- --  04 00 00 FC 00110100\n")
 
-    # def test_cmp_imm(self):
-    #     """Test cmp imm instruction. FF-00"""
-    #     self.emulator.edit_memory("300", "EA C9 00 00")
+    def test_cmp_imm(self):
+        """Test cmp imm instruction. FF-00"""
+        self.emulator.edit_memory("300", "EA C9 00 00")
 
-    #     self.emulator.write_AC(255)
-    #     output = self.emulator.run_program("300")
+        self.emulator.write_AC(255)
+        output = self.emulator.run_program("300")
 
-    #     self.assertEqual(
-    #         output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
-    #         " 300  EA  NOP   impl -- --  FF 00 00 FF 10100000\n" +
-    #         " 301  C9  CMP      # 00 --  FF 00 00 FF 10100001\n" +
-    #         " 303  00  BRK   impl -- --  FF 00 00 FC 10110101\n")
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  FF 00 00 FF 10100000\n" +
+            " 301  C9  CMP      # 00 --  FF 00 00 FF 00100001\n" +
+            " 303  00  BRK   impl -- --  FF 00 00 FC 00110101\n")
 
     def test_eor_imm(self):
         """Test eor imm instruction. 5^4"""

@@ -91,6 +91,8 @@ class Instructions(Memory.Memory):
             "C8": self.iny,
             "C9": self.cmp_imm,
             "CA": self.dex,
+            "CC": self.cpy_abs,
+            "CD": self.cmp_abs,
             "CE": self.dec_abs,
             "D0": self.bne_rel,
             "D8": self.cld,
@@ -100,6 +102,7 @@ class Instructions(Memory.Memory):
             "E8": self.inx,
             "E9": self.sbc_imm,
             "EA": self.nop,
+            "EC": self.cpx_abs,
             "EE": self.inc_abs,
             "F0": self.beq_rel,
             "F8": self.sed
@@ -841,6 +844,55 @@ class Instructions(Memory.Memory):
         self.registers[6:7] = sr.to_bytes(1, byteorder='big')
         return "CLV", "impl"
 
+    def CMP(self, data1: int, data2: int):
+        """Compares data1 with data2 and sets appropriate flags.
+        
+        Arguments:
+            data1 {int} -- first data
+            data2 {int} -- second data
+        """
+        logger.debug("Comparing " + str(data1) + " and " + str(data2))
+        if data1 >= data2:
+            logger.debug("Setting the carry flag")
+            self.set_carry()
+            self.unset_negative()
+        else:
+            sign, data2 = self.check_negative(data2)
+            if sign:
+                self.unset_carry()
+        if data1 == data2:
+            self.set_zero()
+
+    def cmp_abs(self):
+        """
+        Z,C,N = A-M
+
+        This instruction compares the contents of the accumulator with another memory held value and sets the zero and carry flags as appropriate.
+
+        Processor Status after use:
+
+        C	Carry Flag	Set if A >= M
+        Z	Zero Flag	Set if A = M
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of the result is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address+1)
+
+        low, high, address = self.make_address(mem_address)
+
+        mem_value = self.read_memory(address, address + 1).hex()
+        mem_value = int(mem_value, 16)
+
+        ac = self.get_AC()
+
+        self.CMP(ac, mem_value)
+
+        return "CMP", " abs", low, high
+
     def cmp_imm(self):
         """
         Z,C,N = A-M
@@ -915,6 +967,36 @@ class Instructions(Memory.Memory):
             self.set_zero()
 
         return "CMP", " zpg", zpg_address
+    
+    def cpx_abs(self):
+        """
+        Z,C,N = X-M
+
+        This instruction compares the contents of the x register with another memory held value and sets the zero and carry flags as appropriate.
+
+        Processor Status after use:
+
+        C	Carry Flag	Set if X >= M
+        Z	Zero Flag	Set if X = M
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of the result is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address+1)
+
+        low, high, address = self.make_address(mem_address)
+
+        mem_value = self.read_memory(address, address + 1).hex()
+        mem_value = int(mem_value, 16)
+
+        x = self.get_X()
+
+        self.CMP(x, mem_value)
+
+        return "CPX", " abs", low, high
 
     def cpx_imm(self):
         """
@@ -990,6 +1072,36 @@ class Instructions(Memory.Memory):
             self.set_zero()
 
         return "CPX", " zpg", zpg_address
+    
+    def cpy_abs(self):
+        """
+        Z,C,N = Y-M
+
+        This instruction compares the contents of the y register with another memory held value and sets the zero and carry flags as appropriate.
+
+        Processor Status after use:
+
+        C	Carry Flag	Set if Y >= M
+        Z	Zero Flag	Set if Y = M
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Not affected
+        N	Negative Flag	Set if bit 7 of the result is set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address+1)
+
+        low, high, address = self.make_address(mem_address)
+
+        mem_value = self.read_memory(address, address + 1).hex()
+        mem_value = int(mem_value, 16)
+
+        y = self.get_Y()
+
+        self.CMP(y, mem_value)
+
+        return "CPY", " abs", low, high
 
     def cpy_imm(self):
         """
@@ -1432,11 +1544,10 @@ class Instructions(Memory.Memory):
         V	Overflow Flag	Not affected
         N	Negative Flag	Not affected
         """
-        mem_address = self.get_PC() + 1
-        self.write_PC(mem_address+1)
-        
-        low, high, address = self.make_address(mem_address)
+        mem_address = self.get_PC()
+        low, high, address = self.make_address(mem_address + 1)
 
+        print("Pushing " + str(mem_address - 1) + " onto the stack")
         self.push_to_stack(mem_address + 2, 2)
         self.write_PC(address - 1)
 
@@ -2218,11 +2329,13 @@ class Instructions(Memory.Memory):
         new_pc = bytearray(2)
         new_pc[0:1] = data[1:2]
         new_pc[1:2] = data[0:1]
+        print("Going back to " + str(new_pc))
         
         logger.debug("Going back to " + str(new_pc))
         
         new_pc = int(new_pc.hex(), 16)
-        self.write_PC(new_pc - 1)
+        self.write_PC(new_pc)
+        
         return "RTS", "impl"
 
     def sbc_imm(self):
