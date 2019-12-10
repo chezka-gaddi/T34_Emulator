@@ -338,9 +338,9 @@ class Memory:
         """
         sp = self.get_SP() + 256
         data = data.to_bytes(size, byteorder='little')
-        print("Pushing " + str(data) + " onto stack")
+        logger.debug("Pushing " + str(data) + " onto stack")
         self.memory[sp:sp+size] = data[:]
-        print(self.memory[sp:sp+size])
+        logger.debug(self.memory[sp:sp+size])
         sp -= size
         sp -= 256
         self.write_SP(sp)
@@ -355,8 +355,7 @@ class Memory:
         data = self.read_memory(sp, sp+size)
         sp -= 256
         self.write_SP(sp)
-        print("Popped " + str(data) + " from stack")
-        logger.debug(data)
+        logger.debug("Popped " + str(data) + " from stack")
         return data
 
     def twos_complement(self, value: int) -> int:

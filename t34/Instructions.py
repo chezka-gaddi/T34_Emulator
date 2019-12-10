@@ -98,11 +98,13 @@ class Instructions(Memory.Memory):
             "D8": self.cld,
             "E0": self.cpx_imm,
             "E4": self.cpx_zpg,
+            "E5": self.sbc_zpg,
             "E6": self.inc_zpg,
             "E8": self.inx,
             "E9": self.sbc_imm,
             "EA": self.nop,
             "EC": self.cpx_abs,
+            "ED": self.sbc_abs,
             "EE": self.inc_abs,
             "F0": self.beq_rel,
             "F8": self.sed
@@ -1539,7 +1541,7 @@ class Instructions(Memory.Memory):
         mem_address = self.get_PC()
         low, high, address = self.make_address(mem_address + 1)
 
-        print("Pushing " + str(mem_address - 1) + " onto the stack")
+        logger.debug("Pushing " + str(mem_address - 1) + " onto the stack")
         self.push_to_stack(mem_address + 2, 2)
         self.write_PC(address - 1)
 
@@ -2321,7 +2323,7 @@ class Instructions(Memory.Memory):
         new_pc = bytearray(2)
         new_pc[0:1] = data[1:2]
         new_pc[1:2] = data[0:1]
-        print("Going back to " + str(new_pc))
+        logger.debug("Going back to " + str(new_pc))
         
         logger.debug("Going back to " + str(new_pc))
         
@@ -2329,6 +2331,64 @@ class Instructions(Memory.Memory):
         self.write_PC(new_pc)
         
         return "RTS", "impl"
+
+    def SBC(self, minuend: int, subtrahend: int) -> int:
+        """Subtract two integers with carry and return result.
+        
+        Arguments:
+            minuend {int} -- Starting number
+            subtrahend {int} -- Number to be taken away
+        
+        Returns:
+            int -- Difference
+        """
+        logging.debug("Subtracting with carry: " + str(minuend) + " and " + str(subtrahend))
+        
+        carry = ~1 if self.carry_isSet() else ~0
+        difference = minuend + ~subtrahend - carry
+
+        if difference >= -128 and difference <= 127:
+            self.unset_overflow()
+        elif difference < -128 or difference > 127:
+            self.set_overflow()
+            self.unset_carry()
+
+        self.check_negative(difference)
+        self.check_zero(difference)
+
+        return difference
+    
+    def sbc_abs(self):
+        """
+        A,Z,C,N = A-M-(1-C)
+
+        This instruction subtracts the contents of a memory location to the accumulator together with the not of the carry bit. If overflow occurs the carry bit is clear, this enables multiple byte subtraction to be performed.
+
+        Processor Status after use:
+
+        C	Carry Flag	Clear if overflow in bit 7
+        Z	Zero Flag	Set if A = 0
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Set if sign bit is incorrect
+        N	Negative Flag	Set if bit 7 set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address+1)
+        
+        low, high, address = self.make_address(mem_address)
+        value = self.read_memory(address, address + 1)
+        value = int(value, 16)
+        ac = self.get_AC()
+        
+        ac = self.twos_complement(ac)
+        two_value = self.twos_complement(value)
+
+        diff = self.SBC(ac, two_value)
+        self.write_AC(diff)
+
+        return "SBC", " abs", low, high
 
     def sbc_imm(self):
         """
@@ -2350,27 +2410,46 @@ class Instructions(Memory.Memory):
         self.write_PC(mem_address)
         mem_value = self.read_memory(mem_address, mem_address + 1).hex()
         mem_value = int(mem_value, 16)
-        mem_sign, mem_value = self.check_negative(mem_value)
         ac = self.get_AC()
-        ac_sign, ac = self.check_negative(ac)
 
-        carry = 1 if self.carry_isSet() else 0
+        ac = self.twos_complement(ac)
+        two_value = self.twos_complement(mem_value)
 
-        ac = ac - mem_value - (1 - carry)
-
-        new_ac_sign, ac = self.check_negative(ac)
-
-        if ac_sign ^ mem_sign == new_ac_sign:
-            logger.debug("Overflow")
-            self.set_overflow()
-            self.unset_carry()
-            ac -= 256
-        else:
-            self.unset_overflow()
-
-        self.write_AC(ac)
+        diff = self.SBC(ac, two_value)
+        self.write_AC(diff)
 
         return "SBC", "   #", mem_value
+    
+    def sbc_zpg(self):
+        """
+        A,Z,C,N = A-M-(1-C)
+
+        This instruction subtracts the contents of a memory location to the accumulator together with the not of the carry bit. If overflow occurs the carry bit is clear, this enables multiple byte subtraction to be performed.
+
+        Processor Status after use:
+
+        C	Carry Flag	Clear if overflow in bit 7
+        Z	Zero Flag	Set if A = 0
+        I	Interrupt Disable	Not affected
+        D	Decimal Mode Flag	Not affected
+        B	Break Command	Not affected
+        V	Overflow Flag	Set if sign bit is incorrect
+        N	Negative Flag	Set if bit 7 set
+        """
+        mem_address = self.get_PC() + 1
+        self.write_PC(mem_address)
+        address = self.read_memory(mem_address, mem_address + 1).hex()
+        value = self.read_memory(address, address + 1)
+        
+        value = int(value, 16)
+        ac = self.get_AC()
+        ac = self.twos_complement(ac)
+        two_value = self.twos_complement(value)
+
+        diff = self.SBC(ac, two_value)
+        self.write_AC(diff)
+
+        return "SBC", " zpg", value
 
     def sec(self):
         """

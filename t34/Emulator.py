@@ -5,6 +5,7 @@
 import logging
 import math
 import string
+from intelhex import IntelHex
 from . import Instructions
 from . import Memory
 logger = logging.getLogger(__name__)
@@ -32,24 +33,11 @@ class Emulator(Instructions.Instructions):
         :return: successful read
         :rtype: bool
         """
-        with open(self.program) as f:
-            lineList = f.readlines()
-
-        for line in lineList:
-            logger.debug(line)
-            bytecount = line[1:3]
-            bytecount = int(bytecount, 16)
-            address = line[3:7]
-            address = int(address, 16)
-            data = line[9:-3]
-
-            data = [int(data[i:i+2], 16) for i in range(0, len(data), 2)]
-
-            self.memory[address:address+bytecount] = data[:]
-
-            logger.debug(self.memory[address:address+bytecount])
-
-        logger.debug(lineList)
+        ih = IntelHex(self.program)
+        pydict = ih.todict()
+        for address in pydict:
+            self.memory[address:address +
+                        1] = pydict[address].to_bytes(1, byteorder="big")
 
     def start_emulator(self):
         """Starts the emulator and evaluates and executes commands."""
@@ -96,7 +84,7 @@ class Emulator(Instructions.Instructions):
         :return: memory content
         :rtype: string
         """
-        logger.debug("Accessing Memory")
+        logger.debug("Accessing Memory at Address: " + address)
 
         ad = int(address, 16)
         return address + "\t" + self.read_memory(ad, ad+1).hex().upper()
@@ -111,7 +99,7 @@ class Emulator(Instructions.Instructions):
         :return out: contents of the memory range.
         :rtype: string
         """
-        logger.debug("Accessing memory range")
+        logger.debug("Accessing Memory Range: " + begin + " - " + end)
 
         b = int(begin, 16)
         e = int(end, 16)
@@ -136,9 +124,7 @@ class Emulator(Instructions.Instructions):
         :param str address: HEX address of the memory to be edited.
         :param str data: data to store into the memory address.
         """
-        logger.debug(data)
         data = [int(byte, base=16) for byte in data.split()]
-        logger.debug(data)
 
         self.write_memory(address, data)
 
@@ -166,7 +152,7 @@ class Emulator(Instructions.Instructions):
         Gets the instruction stored in memory, decodes it and executes it.
 
         :param address: Location of the command to be executed
-        :return output: Contents of specific 
+        :return output: Contents of specific
         """
         logger.debug("Current PC: " + str(address))
 
@@ -174,7 +160,7 @@ class Emulator(Instructions.Instructions):
         self.registers[:2] = addr[:]
 
         op = self.read_memory(address, address+1).hex().upper()
-        logger.debug("OP: " + op)
+        logger.debug("OPcode: " + op)
         ins = self.instructions[op]
 
         data = ins()

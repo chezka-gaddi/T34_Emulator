@@ -155,3 +155,30 @@ class TestInstructionsImmediate(unittest.TestCase):
             " 300  EA  NOP   impl -- --  C2 00 00 FF 10100000\n" +
             " 301  09  ORA      # A9 --  EB 00 00 FF 10100000\n" +
             " 303  00  BRK   impl -- --  EB 00 00 FC 10110100\n")
+
+    def test_sbc_imm(self):
+        """Test sbc imm instruction."""
+        self.emulator.edit_memory("300", "EA E9 FF 00")
+
+        self.emulator.write_AC(9)
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  09 00 00 FF 00100000\n" +
+            " 301  E9  SBC      # FF --  0A 00 00 FF 00100000\n" +
+            " 303  00  BRK   impl -- --  0A 00 00 FC 00110100\n")
+
+    def test_sbc_imm_carry(self):
+        """Test sbc imm instruction. """
+        self.emulator.edit_memory("300", "EA E9 01 00")
+
+        self.emulator.write_AC(5)
+        self.emulator.set_carry()
+        output = self.emulator.run_program("300")
+
+        self.assertEqual(
+            output, " PC  OPC  INS   AMOD OPRND  AC XR YR SP NV-BDIZC\n" +
+            " 300  EA  NOP   impl -- --  05 00 00 FF 00100001\n" +
+            " 301  E9  SBC      # 01 --  05 00 00 FF 00100001\n" +
+            " 303  00  BRK   impl -- --  05 00 00 FC 00110101\n")
