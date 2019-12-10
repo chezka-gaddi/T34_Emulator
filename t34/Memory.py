@@ -358,3 +358,17 @@ class Memory:
         print("Popped " + str(data) + " from stack")
         logger.debug(data)
         return data
+
+    def twos_complement(self, value: int) -> int:
+        """Computes the 2's complement
+
+        Arguments:
+            value {int} -- number to convert
+
+        Returns:
+            int -- two's complement of value
+        """
+        if (value & (1 << 7)) != 0:
+            value = value - (1 << 8)
+
+        return value

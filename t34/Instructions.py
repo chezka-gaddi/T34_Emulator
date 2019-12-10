@@ -581,12 +581,12 @@ class Instructions(Memory.Memory):
         ac = self.get_AC()
         value = ac & mem_value
 
-        if value & (1 << 6):
+        if mem_value & (1 << 6):
             self.set_overflow()
         else:
             self.unset_overflow()
 
-        if value & (1 << 7):
+        if mem_value & (1 << 7):
             self.set_negative()
         else:
             self.unset_negative()
@@ -644,8 +644,7 @@ class Instructions(Memory.Memory):
         branch_displacement = self.read_memory(mem_address, mem_address + 1).hex()
         branch_displacement = int(branch_displacement, 16)
 
-        if branch_displacement & (1 << 7):
-            branch_displacement -= 1 << 7
+        branch_displacement = self.twos_complement(branch_displacement)
 
         if self.zero_isSet() is False:
             self.write_PC(pc + branch_displacement - 1)
